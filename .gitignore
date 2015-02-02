@@ -52,5 +52,3 @@ docs/_build/
 
 # PyBuilder
 target/
-tests/ContactInfo.csv
-tests/test_db_connect.ini
