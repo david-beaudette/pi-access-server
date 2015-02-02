@@ -52,3 +52,4 @@ docs/_build/
 
 # PyBuilder
 target/
+piaccessserver/db_connect_fields.ignored

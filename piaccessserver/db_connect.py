@@ -3,12 +3,11 @@ import ConfigParser
 import csv
 import string
 import MySQLdb
-import access_mgt
 
-def test():
+def read_db(machines, members, cards, tags):
     # Read parameter file
     config = ConfigParser.RawConfigParser()
-    config.read('test_db_connect.ini')
+    config.read('db_connect.ini')
     civi_host = config.get('DATABASE', 'civi_host')
     civi_db   = config.get('DATABASE', 'civi_db')
     civi_user = config.get('DATABASE', 'civi_user')
@@ -62,40 +61,55 @@ def test():
     try:
         cur.execute(get_machine_req)
         machine_req = cur.fetchall()
-        print(machine_req)
+        #print(machine_req)
         
         cur.execute(get_card_req)
         card_req = cur.fetchall()
-        print(card_req)
+        #print(card_req)
         
         cur.execute(get_member_req)
         member_req = cur.fetchall()
-        print(member_req)
+        #print(member_req)
         
         cur.execute(get_tag_req)
         tag_req = cur.fetchall()
-        print(tag_req)
+        #print(tag_req)
 
-        print("All data retrieved from database.")
-        b_load_file = False
+        print("db_connect-read_db: All data retrieved from database.")
+
+        machines.extend(machine_req)
+        cards.extend(card_req)
+        members.extend(member_req)
+        tags.extend(tag_req)
+        return True
         
     except MySQLdb.Error as e:
         print("An error has been passed. %s" % e)
         print("Will load values from csv file if found.")
         # Real code should do that...
-        b_load_file = True
+        return False
         
     finally:            
         if db:    
             db.close()
 
-    # Build csv file header with column names
-    csv_header = ['Id du membre', 'Nom du membre',
-                  'Numéro de carte', 'Code de la carte']
-    # Add machine names
-    for machine in machine_req:
-        csv_header.append(machine[1])
 
-    # Write CSV file with returned results
-    member_access_write(machine_req, member_req, card_req, tag_req)
+
+# UNIT TEST (if script is executed directly)
+if __name__ == '__main__':
+    import access_mgt
+    machines = []
+    members = []
+    cards = []
+    tags = []
+    
+    # Test db data retrieval
+    read_db(machines, members, cards, tags)
+
+    # Inspect outputs
+    print(machines) 
+    print(members) 
+    print(cards) 
+    print(tags) 
+
 
