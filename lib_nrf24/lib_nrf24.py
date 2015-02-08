@@ -548,13 +548,12 @@ class NRF24:
 
     def openWritingPipe(self, value):
         # Note that the NRF24L01(+)
-        # expects it LSB first.
+        # expects its LSB first.
 
         self.write_register(NRF24.RX_ADDR_P0, value, 5)
         self.write_register(NRF24.TX_ADDR, value, 5)
 
-        max_payload_size = 32
-        self.write_register(NRF24.RX_PW_P0, min(self.payload_size, max_payload_size))
+        self.write_register(NRF24.RX_PW_P0, min(self.payload_size, NRF24.MAX_PAYLOAD_SIZE))
 
     def openReadingPipe(self, child, address):
         # If this is pipe 0, cache the address.  This is needed because
