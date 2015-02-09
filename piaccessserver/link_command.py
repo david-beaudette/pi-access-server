@@ -2,11 +2,11 @@ import time
 from datetime import timedelta, datetime
 
 class LinkCommand():
+    """ A single radio is shared between several LinkCommand instances,
+    each with its own RF channel (TBD if a different pipe address
+    is required)
+    """
     def __init__(self, radio, channel, machine_id):
-        ''' A single radio is shared between several LinkCommand instances,
-        each with its own RF channel (TBD if a different pipe address
-        is required)
-        '''
         self.radio      = radio
         self.channel    = channel
         self.machine_id = machine_id
@@ -14,7 +14,7 @@ class LinkCommand():
         self.wait_rx_retry = 100
         
     def send_command(self, command):
-        ''' Used to send any command and check for ACK '''
+        """ Used to send any command and check for ACK """
         
         # Configure the radio on the right RF channel for the machine
         self.radio.setChannel(self.channel)
@@ -42,26 +42,31 @@ class LinkCommand():
                 "reply_ok": reply_ok}    
     
     def register(self):
+        """ Send the register command."""
         return self.send_command([0xA0])
     
     def enable_machine(self):
+        """ Send the enable command."""
         return self.send_command([0xA1])
 
     def disable_machine(self):
+        """ Send the disable command."""
         return self.send_command([0xA2])
 
     def dump_logging(self):
+        """ Send the dump logging command."""
         # Initialise outputs
-        outarg              = {"read_ok": False}
+        outarg = {"read_ok": False}
         outarg["log_count"] = 0
         outarg["log_codes"] = []
         outarg["log_users"] = []
         outarg["log_times"] = []
+
+        # Ask for remaining entries one by one
         num_entries = 1
         while num_entries > 0:
             # Send command and validate machine state
             cmd_state = self.send_command([0xA3])
-            print(cmd_state)
             outarg.update(cmd_state)
 
             if not self.wait_rx():
@@ -75,7 +80,7 @@ class LinkCommand():
                 if (read_buf[0] != 0xA3):
                     return outarg
                 
-                # Retrieve first elements to initialise output
+                # Read number of remaining entries
                 num_entries = read_buf[1]
                 if num_entries == 0:
                     # No log entries to add
@@ -89,12 +94,11 @@ class LinkCommand():
                 
                 # Immediately convert elapsed time in seconds
                 # to UTC date and time for logging
-                outarg["log_times"].append([datetime.utcnow() - \
-                                       timedelta(seconds=read_buf[7])])
+                outarg["log_times"].append(datetime.utcnow() - \
+                                       timedelta(seconds=read_buf[7]))
 
             else:
                 # Not enough data bytes were received
-                print("Log entry packet incomplete (only %d bytes)." % len(read_buf))
                 return outarg
         
         # Everything went fine
@@ -116,15 +120,19 @@ class LinkCommand():
         return True            
 
 class DummyRadio():
+    """ This test class mimics the behaviour of the lib_nrf24.py has used
+        for this project. It also allows testing various errors that are
+        less practical to generate with real hardware.
+    """
     def __init__(self):
         # Error emulation
         self.b_link_err    = False
         self.b_machine_err = False
-        self.b_reply_err = False
+        self.b_reply_err   = False
         
         self.link_errors    = {}
         self.machine_errors = {}
-        self.reply_errors = {}
+        self.reply_errors   = {}
         
         # Communication buffer
         self.rx_buf = []
