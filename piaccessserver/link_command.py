@@ -13,33 +13,41 @@ class LinkCommand():
         self.wait_rx_sleep = 0.01
         self.wait_rx_retry = 100
         
+    def init_radio(self):
+        """ Used to send any command and check for ACK """
+        # Configure the radio on the right RF channel for the machine
+        self.radio.setChannel(self.channel)
+
+        # Empty transmission buffers
+        self.radio.flush_rx()
+        self.radio.flush_tx()
+        
     def send_command(self, command):
         """ Used to send any command and check for ACK """
         
-        # Configure the radio on the right RF channel for the machine
-        self.radio.setChannel(self.channel)
-        
-        link_ok    = False
-        reply_ok   = False
-        machine_ok = False
+        # Initialise radio
+        self.init_radio()
+
+        # Initialise outputs
+        outarg = {"link_ok":    False,
+                  "machine_ok": False,
+                  "reply_ok":   False}
         
         if self.radio.write(command):
             # Write successful
-            link_ok  = True
+            outarg["link_ok"] = True
             read_buf = []
 
             if (self.wait_rx() and
                 self.radio.read(read_buf, 1) == 1):
                 # Check received state
                 if   read_buf[0] == 0xAF:
-                    reply_ok   = True
+                    outarg["reply_ok"]   = True
                 elif read_buf[0] == 0xA0:
-                    machine_ok = True
-                    reply_ok   = True
+                    outarg["machine_ok"] = True
+                    outarg["reply_ok"]   = True
                     
-        return {"link_ok": link_ok,
-                "machine_ok": machine_ok,
-                "reply_ok": reply_ok}    
+        return outarg    
     
     def register(self):
         """ Send the register command."""
@@ -106,9 +114,77 @@ class LinkCommand():
         
         return outarg                
                     
-    def update_table(self):
-        # TODO: implement sending data table
-        pass
+    def update_table(self, table):
+        """ Send each access table entry. The table is a 2 elements list:
+            [0] List of 4 bytes card IDs (ex: table[0][14] = [112, 64, 132, 11])
+            [1] List of booleans (ex: table[1][14] = True if card is authorized)
+        """
+        # Initialise outputs
+        table_size = len(table[0])
+        outarg = {"send_ok":    False,
+                  "recv_ok":    False,
+                  "machine_ok": False,
+                  "update_ok":  False,
+                  "num_entries": table_size,
+                  "num_authmod": 0,
+                  "num_newcard": 0}
+    
+        # Initialise radio
+        self.init_radio()
+        
+        for i in range(table_size):
+            # Prepare data to be sent
+            command = [0xA4, table_size-i]
+            command.append(int(table[1][i])) # authorisation
+            for byte in table[0][i]:
+                command.append(byte) # each byte from card ID
+            
+            if not self.radio.write(command):
+                return outarg
+            
+            # Wait for answer
+            read_buf = []
+            if not (self.wait_rx() and
+                    self.radio.read(read_buf, 3) == 3):
+                # Only write operation succeeded, exit
+                outarg["send_ok"] = True
+                return outarg
+            
+            # Check received state
+            if read_buf[0] != 0xA0:
+                # Machine has a problem, exit
+                outarg["send_ok"] = True
+                outarg["recv_ok"] = True
+                return outarg
+                
+            # Check command byte
+            if read_buf[1] != 0xA4:
+                # Returned command does not match, exit
+                outarg["send_ok"] = True
+                return outarg
+            
+            # Check how this entry was managed
+            # How I miss switch cases...
+            if read_buf[2] == 0xD1:
+                # No update was required for this card
+                pass
+            elif read_buf[2] == 0xD2:
+                # Authorisation was modified for this card
+                outarg["num_authmod"] += 1
+            elif read_buf[2] == 0xD3:
+                # New card added
+                outarg["num_newcard"] += 1
+            elif read_buf[2] == 0xDF:
+                # Memory full, exit 
+                outarg["send_ok"] = True
+                outarg["recv_ok"] = True
+                return outarg
+            else:
+                # Receive error, code not recognised, exit
+                outarg["send_ok"] = True
+                return outarg
+                
+        return outarg    
 
     def wait_rx(self):
         num_retry = 0
@@ -134,11 +210,15 @@ class DummyRadio():
         self.machine_errors = {}
         self.reply_errors   = {}
         
-        # Communication buffer
+        # Communication buffers
         self.rx_buf = []
+        self.tx_buf = []
 
         # Current channel
         self.channel = -1
+
+        # Machine access table
+        self.access_table = []
 
     def link_err(self, channel):    self.link_errors[hex(channel)] = True       
     def link_ok(self, channel):     self.link_errors[hex(channel)] = False       
@@ -189,7 +269,6 @@ class DummyRadio():
 
         elif buf[0] == 0xA3:
             # Dump logging command, answer state first
-            self.rx_buf = []
             num_entries = len(self.log_code)
             if num_entries == 0:
                 # Send empty log buffer
@@ -219,6 +298,11 @@ class DummyRadio():
                 del self.log_code[0]
                 del self.log_user[0]
                 del self.log_age[0]
+
+        elif buf[0] == 0xA4:
+            # TODO: Update table command
+            pass
+            
         return True
     
     def read(self, buf, buf_len=-1):
@@ -236,6 +320,10 @@ class DummyRadio():
     
     def flush_rx(self):
         del self.rx_buf[:]
+        return True
+    
+    def flush_tx(self):
+        del self.tx_buf[:]
         return True
     
 # UNIT TEST (if script is executed directly)
@@ -300,3 +388,21 @@ if __name__ == '__main__':
 
     print("\nExpecting 5 log entries from machine.")
     print(links[2].dump_logging())
+
+    # Fill machine access table prior to update
+    radio.access_table = [[[0x70, 0x40, 0x84, 0x0B],
+                           [0x45, 0x55, 0x55, 0x55],
+                           [0x67, 0x89, 0x23, 0x11],
+                           [0xA5, 0x5F, 0x78, 0xBC]],
+                          [True, False, True, False]]
+    # Create updated table
+    new_table =          [[[0x70, 0x40, 0x84, 0x0B],
+                           [0x45, 0x55, 0x55, 0x55],
+                           [0x67, 0x89, 0x23, 0x11],
+                           [0xA5, 0x5F, 0x78, 0xBC],
+                           [0x55, 0x55, 0x84, 0x0B],
+                           [0x89, 0x23, 0x11, 0xDE]],
+                          [False, True, True, False, False, True]]
+
+    # Send updated table
+    print(links[2].update_table(new_table))
