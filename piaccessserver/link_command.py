@@ -138,7 +138,7 @@ class LinkCommand():
             command.append(int(table[1][i])) # authorisation
             for byte in table[0][i]:
                 command.append(byte) # each byte from card ID
-            
+            print(command)
             if not self.radio.write(command):
                 return outarg
             
@@ -175,7 +175,7 @@ class LinkCommand():
                 # New card added
                 outarg["num_newcard"] += 1
             elif read_buf[2] == 0xDF:
-                # Memory full, exit 
+                # Memory full, exit
                 outarg["send_ok"] = True
                 outarg["recv_ok"] = True
                 return outarg
@@ -183,8 +183,35 @@ class LinkCommand():
                 # Receive error, code not recognised, exit
                 outarg["send_ok"] = True
                 return outarg
-                
-        return outarg    
+            
+        outarg["send_ok"] = True
+        outarg["recv_ok"] = True
+        outarg["update_ok"] = True
+                       
+        return outarg
+    
+    def check_memory(self):
+        outarg = {"read_ok": False}
+        # Send command and validate machine state
+        cmd_state = self.send_command([0xA5])
+        outarg.update(cmd_state)
+
+        read_buf = []
+        if not (self.wait_rx() and
+                self.radio.read(read_buf, 5) == 5):
+            # No or invalid message received
+            return outarg
+
+        # Make sure first element is the command
+        if (read_buf[0] != 0xA5):
+            return outarg
+        
+        # Read memory state
+        outarg["mem_size"] = read_buf[1] + read_buf[2] * 0xFF
+        outarg["mem_used"] = read_buf[3] + read_buf[4] * 0xFF
+        
+        outarg["read_ok"] = True
+        return outarg
 
     def wait_rx(self):
         num_retry = 0
@@ -218,7 +245,9 @@ class DummyRadio():
         self.channel = -1
 
         # Machine access table
-        self.access_table = []
+        self.access_table = [[], []]
+        self.mem_size = 0
+        self.mem_used = 0
 
     def link_err(self, channel):    self.link_errors[hex(channel)] = True       
     def link_ok(self, channel):     self.link_errors[hex(channel)] = False       
@@ -261,8 +290,7 @@ class DummyRadio():
         # Return the expected reply from Arduino
         if (buf[0] == 0xA0 or
             buf[0] == 0xA1 or
-            buf[0] == 0xA2 or
-            buf[0] == 0xA4):
+            buf[0] == 0xA2):
             # Register, enable, disable or update table command, answer state
             self.rx_buf = [0xA0 + 0x0F * (self.b_machine_err)]
             print("Machine will receive %s command." % hex(buf[0]))
@@ -300,8 +328,46 @@ class DummyRadio():
                 del self.log_age[0]
 
         elif buf[0] == 0xA4:
-            # TODO: Update table command
-            pass
+            # Machine state
+            self.rx_buf.append(0xA0 + 0x0F * (self.b_machine_err)) 
+            # Repeat the command itself
+            self.rx_buf.append(0xA4)
+            # Do nothing if the number of remaining entries is 0
+            if buf[1] == 0:
+                return True
+            # Check if the card ID is in memory
+            card_id = buf[3:7]
+            user_auth = buf[2]
+            if card_id in self.access_table[0]:
+                user_auth_prev = self.access_table[1] \
+                                [self.access_table[0].index(card_id)]
+                # Check if authorisation was updated
+                if user_auth_prev == user_auth:
+                    self.rx_buf.append(0xD1)
+                else:
+                    self.rx_buf.append(0xD2)
+            else:
+                # Check if another user can fit in memory
+                self.mem_used = len(self.access_table[0])
+                if self.mem_used < self.mem_size:
+                    self.rx_buf.append(0xD3)
+                    self.access_table[0].append(card_id)
+                    self.access_table[1].append(user_auth)
+                else:
+                    self.rx_buf.append(0xDF)
+            
+        elif buf[0] == 0xA5:
+            # Dump 1 log entry
+            self.rx_buf.append(0xA0 + 0x0F * (self.b_machine_err)) 
+            # Repeat the command itself
+            self.rx_buf.append(0xA5) 
+            # Memory total size
+            self.rx_buf.append(self.mem_size % 0x100) 
+            self.rx_buf.append(int(self.mem_size / 0x100)) 
+            # Memory used
+            self.mem_used = len(self.access_table[0])
+            self.rx_buf.append(self.mem_used % 0x100) 
+            self.rx_buf.append(int(self.mem_used / 0x100)) 
             
         return True
     
@@ -389,12 +455,23 @@ if __name__ == '__main__':
     print("\nExpecting 5 log entries from machine.")
     print(links[2].dump_logging())
 
-    # Fill machine access table prior to update
+    # Check empty memory
+    print("\nExpecting empty memory.")
+    print(links[2].check_memory())    
+
+        # Fill machine access table prior to update
     radio.access_table = [[[0x70, 0x40, 0x84, 0x0B],
                            [0x45, 0x55, 0x55, 0x55],
                            [0x67, 0x89, 0x23, 0x11],
                            [0xA5, 0x5F, 0x78, 0xBC]],
                           [True, False, True, False]]
+    radio.mem_size = 6
+    
+    # Check memory
+    print("\nExpecting 4 used, 6 total entries in memory.")
+    radio.mem_size = 6
+    print(links[2].check_memory())    
+
     # Create updated table
     new_table =          [[[0x70, 0x40, 0x84, 0x0B],
                            [0x45, 0x55, 0x55, 0x55],
@@ -405,4 +482,29 @@ if __name__ == '__main__':
                           [False, True, True, False, False, True]]
 
     # Send updated table
+    print("\nUpdating access table.")
     print(links[2].update_table(new_table))
+    
+    # Check memory after update
+    print("\nExpecting full memory.")
+    print(links[2].check_memory())    
+
+    # Add another user (exceeding memory)
+    new_table =          [[[0x70, 0x40, 0x84, 0x0B],
+                           [0x45, 0x55, 0x55, 0x55],
+                           [0x67, 0x89, 0x23, 0x11],
+                           [0xA5, 0x5F, 0x78, 0xBC],
+                           [0x55, 0x55, 0x84, 0x0B],
+                           [0x59, 0x95, 0x89, 0xFB],
+                           [0x89, 0x23, 0x11, 0xDE]],
+                          [False, True, True, True, False, False, True]]
+
+    # Send updated table
+    print("\nUpdating access table with too many users.")
+    print(links[2].update_table(new_table))
+    
+    # Check memory after update
+    print("\nExpecting full memory.")
+    print(links[2].check_memory())    
+
+
