@@ -4,10 +4,10 @@ import csv
 import string
 import MySQLdb
 
-def read_db(machines, members, cards, tags):
+def read_db(machines, members, cards, tags, config_filename):
     # Read parameter file
     config = ConfigParser.RawConfigParser()
-    config.read('db_connect.ini')
+    config.read(config_filename)
     civi_host = config.get('DATABASE', 'civi_host')
     civi_db   = config.get('DATABASE', 'civi_db')
     civi_user = config.get('DATABASE', 'civi_user')
@@ -104,7 +104,8 @@ if __name__ == '__main__':
     tags = []
     
     # Test db data retrieval
-    read_db(machines, members, cards, tags)
+    config_filename = 'db_connect_fields.ignored'
+    read_db(machines, members, cards, tags, config_filename)
 
     # Inspect outputs
     print(machines) 

@@ -75,7 +75,7 @@ def member_access_read(filename,
 # UNIT TEST (if script is executed directly)
 if __name__ == '__main__':
     from os import remove
-    csv_filename = 'test_access_mgt.csv'
+    csv_filename = 'test_csv_rw.csv'
 
     # Remove previous test file
     try:
