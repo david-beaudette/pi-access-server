@@ -49,7 +49,9 @@ def member_access_write(filename,
 
 
 def member_access_read(filename,
-                       machine_cardholders):
+                       machines,
+                       cards,
+                       autorisations):
                                 
     # Read back CSV file and load information for each machine
     # Returned tuple 
@@ -58,17 +60,26 @@ def member_access_read(filename,
         header_row = inforeader.next()
         machine_list = header_row[4:]
         for machine in machine_list:
-            machine_cardholders.append([machine])
+            # Add the machine name
+            machines.append(machine)
+            # Add an empty autorisation list
+            autorisations.append([])
         for member in inforeader:
-            # Check if the member has access to the machine
             print member[1]
-            # Check if the member has access to each machine 
-            for machine_num in range(len(machine_list)):
-                if int(member[4 + machine_num]):
-                    # Check if member has a valid card number
-                    if len(member[3]) == 8 and \
-                       all(c in string.hexdigits for c in member[3]):
-                        machine_cardholders[machine_num].append(member[3])
+            # Check if member has a valid card number
+            if len(member[3]) == 8 and \
+               all(c in string.hexdigits for c in member[3]):
+                cards.append(member[3])
+                # Check if the member has access to each machine 
+                for machine_num in range(len(machine_list)):
+                    if int(member[4 + machine_num]):
+                        # Access granted
+                        autorisations[machine_num].append(True)
+                    else:
+                        # Access refused
+                        autorisations[machine_num].append(False)
+                    
+
                 
     return True
 
@@ -110,10 +121,16 @@ if __name__ == '__main__':
                         tags)
     
     # Retrieve from same file
-    machine_cardholders = []
+    machines_r = []
+    cards_r = []
+    autorisations_r = []
     member_access_read(csv_filename,
-                       machine_cardholders)
+                       machines_r,
+                       cards_r,
+                       autorisations_r)
 
     # Inspect output
-    print(machine_cardholders)
+    print(machines_r)
+    print(cards_r)
+    print(autorisations_r)
     

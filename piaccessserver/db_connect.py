@@ -97,7 +97,6 @@ def read_db(machines, members, cards, tags, config_filename):
 
 # UNIT TEST (if script is executed directly)
 if __name__ == '__main__':
-    import access_mgt
     machines = []
     members = []
     cards = []
@@ -105,11 +104,11 @@ if __name__ == '__main__':
     
     # Test db data retrieval
     config_filename = 'db_connect_fields.ignored'
-    read_db(machines, members, cards, tags, config_filename)
+    read_db(machines, [], cards, tags, config_filename)
 
     # Inspect outputs
     print(machines) 
-    print(members) 
+    #print(members) 
     print(cards) 
     print(tags) 
 

@@ -1,15 +1,17 @@
 import time
 from datetime import timedelta, datetime
+import logging
 
 class LinkCommand():
     """ A single radio is shared between several LinkCommand instances,
     each with its own RF channel (TBD if a different pipe address
     is required)
     """
-    def __init__(self, radio, channel, machine_id):
-        self.radio      = radio
-        self.channel    = channel
-        self.machine_id = machine_id
+    def __init__(self, radio, channel, machine_id, machine_name):
+        self.radio         = radio
+        self.channel       = channel
+        self.machine_id    = machine_id
+        self.machine_name  = machine_name
         self.wait_rx_sleep = 0.01
         self.wait_rx_retry = 100
         
@@ -21,6 +23,9 @@ class LinkCommand():
         # Empty transmission buffers
         self.radio.flush_rx()
         self.radio.flush_tx()
+
+        logging.debug("LinkCommand-init_radio: Radio initialised for %s on channel %d.",
+                      self.machine_name, self.channel)
         
     def send_command(self, command):
         """ Used to send any command and check for ACK """
@@ -43,9 +48,17 @@ class LinkCommand():
                 # Check received state
                 if   read_buf[0] == 0xAF:
                     outarg["reply_ok"]   = True
+                    logging.error("Machine %s has a problem. Please verify.",
+                                  self.machine_name)
                 elif read_buf[0] == 0xA0:
                     outarg["machine_ok"] = True
                     outarg["reply_ok"]   = True
+            else:
+                logging.warning("No response from %s.",
+                                self.machine_name)
+        else:
+            logging.warning("Unable to write %s command to %s. Radio link is down.",
+                            hex(command[0]), self.machine_name)
                     
         return outarg    
     
@@ -77,8 +90,12 @@ class LinkCommand():
             cmd_state = self.send_command([0xA3])
             outarg.update(cmd_state)
 
-            if not self.wait_rx():
-                # No message received
+            if not (outarg["link_ok"] and
+                    outarg["reply_ok"] and
+                    outarg["machine_ok"]):
+                # Command was not executed successfully
+                logging.warning("Unable to retrieve log entries from %s",
+                                self.machine_name)
                 return outarg
 
             # Read the remainder of the packet
@@ -86,6 +103,8 @@ class LinkCommand():
             if self.radio.read(read_buf, 8) == 8:
                 # Make sure first element is the command
                 if (read_buf[0] != 0xA3):
+                    logging.error("%s did not answer with sent command as expected.",
+                                  self.machine_name)
                     return outarg
                 
                 # Read number of remaining entries
@@ -93,6 +112,8 @@ class LinkCommand():
                 if num_entries == 0:
                     # No log entries to add
                     outarg["read_ok"] = True
+                    logging.debug("No new log entries for %s.",
+                                  self.machine_name)
                     return outarg
                 
                 # Only update log count if higher
@@ -104,9 +125,19 @@ class LinkCommand():
                 # to UTC date and time for logging
                 outarg["log_times"].append(datetime.utcnow() - \
                                        timedelta(seconds=read_buf[7]))
+                logging.info("Machine: %s; Time: %s; Event code %s; User %s",
+                             self.machine_name,
+                             str(outarg["log_times"][-1].strftime("%Y-%m-%d %H:%M:%S")),
+                             hex(outarg["log_codes"][-1]),
+                             hex(0x01000000 * outarg["log_users"][-1][0] + 
+                             0x00010000 * outarg["log_users"][-1][1] + 
+                             0x00000100 * outarg["log_users"][-1][2] + 
+                             outarg["log_users"][-1][3]))
 
             else:
                 # Not enough data bytes were received
+                logging.error("%s did not answer with enough bytes.",
+                                  self.machine_name)
                 return outarg
         
         # Everything went fine
@@ -138,8 +169,10 @@ class LinkCommand():
             command.append(int(table[1][i])) # authorisation
             for byte in table[0][i]:
                 command.append(byte) # each byte from card ID
-            print(command)
+            
             if not self.radio.write(command):
+                logging.warning("Unable to write %s command to %s. Radio link is down.",
+                                 hex(command[0]), self.machine_name)
                 return outarg
             
             # Wait for answer
@@ -148,6 +181,8 @@ class LinkCommand():
                     self.radio.read(read_buf, 3) == 3):
                 # Only write operation succeeded, exit
                 outarg["send_ok"] = True
+                logging.warning("No response from %s.",
+                                self.machine_name)
                 return outarg
             
             # Check received state
@@ -155,16 +190,19 @@ class LinkCommand():
                 # Machine has a problem, exit
                 outarg["send_ok"] = True
                 outarg["recv_ok"] = True
+                logging.error("Machine %s has a problem. Please verify.",
+                                  self.machine_name)
                 return outarg
                 
             # Check command byte
             if read_buf[1] != 0xA4:
                 # Returned command does not match, exit
                 outarg["send_ok"] = True
+                logging.error("%s did not answer with sent command as expected.",
+                               self.machine_name)
                 return outarg
             
             # Check how this entry was managed
-            # How I miss switch cases...
             if read_buf[2] == 0xD1:
                 # No update was required for this card
                 pass
@@ -178,6 +216,7 @@ class LinkCommand():
                 # Memory full, exit
                 outarg["send_ok"] = True
                 outarg["recv_ok"] = True
+                logging.error("Memory full on %s. Upgrade Arduino device or remove unused user cards from database.")
                 return outarg
             else:
                 # Receive error, code not recognised, exit
@@ -187,6 +226,12 @@ class LinkCommand():
         outarg["send_ok"] = True
         outarg["recv_ok"] = True
         outarg["update_ok"] = True
+
+        logging.info("Table updated on %s; table size: %d; %d card numbers were added; %d authorisations were modified.",
+                     self.machine_name,
+                     outarg["num_entries"],
+                     outarg["num_newcard"],
+                     outarg["num_authmod"])
                        
         return outarg
     
@@ -195,24 +240,42 @@ class LinkCommand():
         # Send command and validate machine state
         cmd_state = self.send_command([0xA5])
         outarg.update(cmd_state)
-
+        
+        if not (outarg["link_ok"] and
+                outarg["reply_ok"] and
+                outarg["machine_ok"]):
+            # Command was not executed successfully
+            logging.warning("Unable to retrieve log entries from %s",
+                             self.machine_name)
         read_buf = []
         if not (self.wait_rx() and
                 self.radio.read(read_buf, 5) == 5):
             # No or invalid message received
+            logging.warning("No response from %s.",
+                                self.machine_name)
             return outarg
 
         # Make sure first element is the command
         if (read_buf[0] != 0xA5):
+            logging.error("%s did not answer with sent command as expected.",
+                               self.machine_name)
             return outarg
         
         # Read memory state
         outarg["mem_size"] = read_buf[1] + read_buf[2] * 0xFF
         outarg["mem_used"] = read_buf[3] + read_buf[4] * 0xFF
         
+        logging.info("Memory state on %s: %d/%d used.",
+                     self.machine_name, outarg["mem_used"],
+                     outarg["mem_size"])
+
         outarg["read_ok"] = True
         return outarg
 
+    def clear_memory(self):
+        """ Send the register command."""
+        return self.send_command([0xA6])
+    
     def wait_rx(self):
         num_retry = 0
         while not self.radio.available([0]):
@@ -291,7 +354,7 @@ class DummyRadio():
         if (buf[0] == 0xA0 or
             buf[0] == 0xA1 or
             buf[0] == 0xA2):
-            # Register, enable, disable or update table command, answer state
+            # Register, enable or disable command, answer state
             self.rx_buf = [0xA0 + 0x0F * (self.b_machine_err)]
             print("Machine will receive %s command." % hex(buf[0]))
 
@@ -367,7 +430,14 @@ class DummyRadio():
             # Memory used
             self.mem_used = len(self.access_table[0])
             self.rx_buf.append(self.mem_used % 0x100) 
-            self.rx_buf.append(int(self.mem_used / 0x100)) 
+            self.rx_buf.append(int(self.mem_used / 0x100))
+            
+        elif buf[0] == 0xA6:
+            # Answer state
+            self.rx_buf = [0xA0 + 0x0F * (self.b_machine_err)]
+            # Remove all cards from memory
+            self.access_table = [[],[]]
+            radio.mem_used = 0
             
         return True
     
@@ -394,6 +464,9 @@ class DummyRadio():
     
 # UNIT TEST (if script is executed directly)
 if __name__ == '__main__':
+    logging.basicConfig(filename='test_link_command.log',
+                        format='%(levelname)s:%(message)s',
+                        level=logging.DEBUG)
     # Init shared radio
     radio = DummyRadio()
 
@@ -401,11 +474,13 @@ if __name__ == '__main__':
     num_machines = 3
     channels = [32, 33, 34]
     machine_ids = [0xA, 0xB, 0xC]
+    machine_names = ['Tour', 'Toupie', 'Banc de scie']
 
     # Create a link for each machine
     links = []
     for n in range(num_machines):
-        links.append(LinkCommand(radio, channels[n], machine_ids[n]))
+        links.append(LinkCommand(radio, channels[n],
+                                 machine_ids[n], machine_names[n]))
 
     # 1st machine (non-powered)
     radio.link_err(channels[0])
@@ -505,6 +580,14 @@ if __name__ == '__main__':
     
     # Check memory after update
     print("\nExpecting full memory.")
+    print(links[2].check_memory())    
+
+    # Clear memory 
+    print("\nClear memory command.")
+    print(links[2].clear_memory())    
+
+    # Check memory after clearing
+    print("\nExpecting empty memory.")
     print(links[2].check_memory())    
 
 
