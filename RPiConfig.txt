@@ -1,0 +1,33 @@
+Raspberry Pi configuration to build an access server
+1. Update the operating system and software
+  sudo apt-get update
+  sudo apt-get upgrade
+  sudo reboot
+  
+2. Install the Python dev package
+  sudo apt-get install python-dev
+  
+3. Enable SPI on the system
+  sudo nano /etc/modprobe.d/raspi-blacklist.conf
+  Comment line with spi-bcm2708 (add # at the beginning of the line)
+  Save (Ctrl+o) and quit (Ctrl+x) nano editor
+  
+4. Reboot (again)
+  sudo reboot
+  
+5. Validate SPI enabling 
+  lsmod
+  Check that spi_bcm2708 is there
+
+6. Install the Python SpiDev module  
+  mkdir python-spi
+  cd python-spi
+  wget https://raw.github.com/doceme/py-spidev/master/setup.py
+  wget https://raw.github.com/doceme/py-spidev/master/spidev_module.c
+  sudo python setup.py install
+  
+7. Install the MySQL module for Python
+  sudo apt-get install python-mysqldb
+  
+8. Install Python GPIO module
+  -> Preinstalled on latest raspbian
