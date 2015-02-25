@@ -31,21 +31,33 @@ radio.openWritingPipe(pipes[1])
 radio.openReadingPipe(1, pipes[0])
 radio.printDetails()
 
-
+retryCount   = 10000
+retryDelayUs = 1
 c=1
 while True:
-    buf = ['H', 'E', 'L', 'O',c]
+    buf = [c]
     c = (c + 1) & 255
     # send a packet to receiver
-    radio.write(buf)
-    print ("Sent:"),
-    print (buf)
-    # did it return with a payload?
-    if radio.isAckPayloadAvailable():
-        pl_buffer=[]
-        radio.read(pl_buffer, radio.getDynamicPayloadSize())
-        print ("Received back:"),
-        print (pl_buffer)
+    radio.stopListening()
+    if radio.write(buf):
+        print("Sent: %d" % buf[0])
+        
     else:
-        print ("Received: Ack only, no payload")
-    time.sleep(10)
+        print("Tx Failed.")
+
+    # Turn to receiver
+    radio.startListening()
+    retry = 0
+    while (not radio.available()) and retry < retryCount:
+        time.sleep(retryDelayUs/1000000.0)
+        retry += 1
+    if retry < retryCount:
+        rx_buf = []
+        radio.read(rx_buf, radio.getDynamicPayloadSize())
+        print("Received "),
+        print(rx_buf),
+        print(" after %d us." % (retry * retryDelayUs))
+    else:
+        print ("Nothing received.")        
+    
+    time.sleep(3)
