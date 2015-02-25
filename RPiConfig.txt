@@ -11,6 +11,9 @@ Raspberry Pi configuration to build an access server
   sudo nano /etc/modprobe.d/raspi-blacklist.conf
   Comment line with spi-bcm2708 (add # at the beginning of the line)
   Save (Ctrl+o) and quit (Ctrl+x) nano editor
+  sudo nano /boot/config.txt
+  Add the following line at the end of the file: dtparam=spi=on
+  Save (Ctrl+o) and quit (Ctrl+x) nano editor
   
 4. Reboot (again)
   sudo reboot
@@ -24,10 +27,13 @@ Raspberry Pi configuration to build an access server
   cd python-spi
   wget https://raw.github.com/doceme/py-spidev/master/setup.py
   wget https://raw.github.com/doceme/py-spidev/master/spidev_module.c
+  wget https://raw.github.com/doceme/py-spidev/master/README.mb
+  wget https://raw.github.com/doceme/py-spidev/master/CHANGELOG.mb 
   sudo python setup.py install
   
 7. Install the MySQL module for Python
   sudo apt-get install python-mysqldb
   
-8. Install Python GPIO module
-  -> Preinstalled on latest raspbian
+8. Check Python GPIO module (preinstalled on latest raspbian)
+  In Idle for Python 2.7 type: import RPi.GPIO
+  Nothing should happen
