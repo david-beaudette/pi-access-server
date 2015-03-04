@@ -37,3 +37,23 @@ Raspberry Pi configuration to build an access server
 8. Check Python GPIO module (preinstalled on latest raspbian)
   In Idle for Python 2.7 type: import RPi.GPIO
   Nothing should happen
+
+9. Install svn
+  sudo apt-get install subversion
+
+10. Pull the source code for the pi-access-server from Github.
+  svn export https://github.com/david-beaudette/pi-access-server/trunk/ ~/pi-access-server
+
+11. Install the radio library in Python path
+  mv ~/pi-access-server/lib_nrf24/lib_nrf24.py /usr/lib/python2.7/dist-packages/
+
+12. Make the piaccessserver application executable
+  [to be documented]
+
+13. Configure cron to launch the script at startup.
+  [to be documented]
+
+14. Configure the access server parameters
+  [to be documented (edit the .ini file)]
+
+15. Reboot
