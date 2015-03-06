@@ -19,7 +19,7 @@ radio = NRF24(GPIO, spidev.SpiDev())
 radio.begin(0, 25)
 time.sleep(1)
 radio.setRetries(15,15)
-radio.setPayloadSize(8)
+radio.setPayloadSize(10)
 radio.setChannel(0x4C)
 
 radio.setDataRate(NRF24.BR_1MBPS)

@@ -12,8 +12,8 @@ class LinkCommand():
         self.channel       = channel
         self.machine_id    = machine_id
         self.machine_name  = machine_name
-        self.wait_rx_sleep = 0.01
-        self.wait_rx_retry = 100
+        self.wait_rx_sleep = 0.000001
+        self.wait_rx_retry = 10000
         
     def init_radio(self):
         """ Used to send any command and check for ACK """
@@ -21,13 +21,12 @@ class LinkCommand():
         self.radio.setChannel(self.channel)
 
         # Empty transmission buffers
-        self.radio.flush_rx()
-        self.radio.flush_tx()
+        self.radio.stopListening()
 
         logging.debug("LinkCommand-init_radio: Radio initialised for %s on channel %d.",
                       self.machine_name, self.channel)
         
-    def send_command(self, command):
+    def send_command(self, command, rx_len = 1):
         """ Used to send any command and check for ACK """
         
         # Initialise radio
@@ -36,34 +35,43 @@ class LinkCommand():
         # Initialise outputs
         outarg = {"link_ok":    False,
                   "machine_ok": False,
-                  "reply_ok":   False}
+                  "reply_ok":   False,
+                  "reply_buf":  []}
         
+        read_buf = []
         if self.radio.write(command):
             # Write successful
             outarg["link_ok"] = True
-            read_buf = []
+            self.radio.startListening()
+            if self.wait_rx():
+                logging.debug("Transmission of %s command acknowledged.",
+                              hex(command[0]))
+                self.radio.read(read_buf, rx_len)
+                if len(read_buf) == rx_len:
+                    # Check received state
+                    if   read_buf[0] == 0xA0:
+                        outarg["reply_ok"]   = True
+                        logging.error("Machine %s has a problem. Please verify.",
+                                      self.machine_name)
+                    elif read_buf[0] == 0xAF:
+                        outarg["machine_ok"] = True
+                        outarg["reply_ok"]   = True
+                else:
+                    logging.warning("Machine %s reply data length (%d) is abnormal.",
+                                    self.machine_name, len(read_buf))
 
-            if (self.wait_rx() and
-                self.radio.read(read_buf, 1) == 1):
-                # Check received state
-                if   read_buf[0] == 0xAF:
-                    outarg["reply_ok"]   = True
-                    logging.error("Machine %s has a problem. Please verify.",
-                                  self.machine_name)
-                elif read_buf[0] == 0xA0:
-                    outarg["machine_ok"] = True
-                    outarg["reply_ok"]   = True
             else:
                 logging.warning("No response from %s.",
                                 self.machine_name)
         else:
             logging.warning("Unable to write %s command to %s. Radio link is down.",
                             hex(command[0]), self.machine_name)
-                    
+        for byte in read_buf:
+            outarg["reply_buf"].append(byte)
         return outarg    
     
-    def register(self):
-        """ Send the register command."""
+    def auto(self):
+        """ Send the auto command."""
         return self.send_command([0xA0])
     
     def enable_machine(self):
@@ -87,7 +95,7 @@ class LinkCommand():
         num_entries = 1
         while num_entries > 0:
             # Send command and validate machine state
-            cmd_state = self.send_command([0xA3])
+            cmd_state = self.send_command([0xA3],9)
             outarg.update(cmd_state)
 
             if not (outarg["link_ok"] and
@@ -99,8 +107,8 @@ class LinkCommand():
                 return outarg
 
             # Read the remainder of the packet
-            read_buf = []                
-            if self.radio.read(read_buf, 8) == 8:
+            read_buf = outarg["reply_buf"][1:]
+            if len(read_buf) == 8:
                 # Make sure first element is the command
                 if (read_buf[0] != 0xA3):
                     logging.error("%s did not answer with sent command as expected.",
@@ -142,7 +150,6 @@ class LinkCommand():
         
         # Everything went fine
         outarg["read_ok"] = True  
-        
         return outarg                
                     
     def update_table(self, table):
@@ -169,24 +176,33 @@ class LinkCommand():
             command.append(int(table[1][i])) # authorisation
             for byte in table[0][i]:
                 command.append(byte) # each byte from card ID
-            
+            print command
             if not self.radio.write(command):
                 logging.warning("Unable to write %s command to %s. Radio link is down.",
                                  hex(command[0]), self.machine_name)
                 return outarg
-            
+            logging.debug("Command #%d sent.", i)
             # Wait for answer
             read_buf = []
-            if not (self.wait_rx() and
-                    self.radio.read(read_buf, 3) == 3):
+            self.radio.startListening()
+            if not self.wait_rx():
                 # Only write operation succeeded, exit
                 outarg["send_ok"] = True
                 logging.warning("No response from %s.",
                                 self.machine_name)
                 return outarg
             
+            # Read received buffer
+            self.radio.read(read_buf, 3)
+            print read_buf
+            if not len(read_buf) == 3:
+                outarg["recv_ok"] = False
+                logging.warning("Machine %s reply data length (%d) is abnormal.",
+                                self.machine_name, len(read_buf))
+                return outarg
+            
             # Check received state
-            if read_buf[0] != 0xA0:
+            if read_buf[0] != 0xAF:
                 # Machine has a problem, exit
                 outarg["send_ok"] = True
                 outarg["recv_ok"] = True
@@ -222,10 +238,12 @@ class LinkCommand():
                 # Receive error, code not recognised, exit
                 outarg["send_ok"] = True
                 return outarg
+            self.radio.stopListening()
             
         outarg["send_ok"] = True
         outarg["recv_ok"] = True
         outarg["update_ok"] = True
+        outarg["machine_ok"] = True
 
         logging.info("Table updated on %s; table size: %d; %d card numbers were added; %d authorisations were modified.",
                      self.machine_name,
@@ -238,21 +256,23 @@ class LinkCommand():
     def check_memory(self):
         outarg = {"read_ok": False}
         # Send command and validate machine state
-        cmd_state = self.send_command([0xA5])
+        cmd_state = self.send_command([0xA5], 6)
         outarg.update(cmd_state)
         
         if not (outarg["link_ok"] and
                 outarg["reply_ok"] and
                 outarg["machine_ok"]):
             # Command was not executed successfully
-            logging.warning("Unable to retrieve log entries from %s",
+            logging.warning("Unable to get memory size from %s",
                              self.machine_name)
-        read_buf = []
-        if not (self.wait_rx() and
-                self.radio.read(read_buf, 5) == 5):
-            # No or invalid message received
-            logging.warning("No response from %s.",
-                                self.machine_name)
+            return outarg
+
+        # Read the remainder of the packet
+        read_buf = outarg["reply_buf"][1:]
+        if not len(read_buf) == 5:
+            # Invalid message received
+            logging.error("%s did not answer with enough bytes.",
+                          self.machine_name)
             return outarg
 
         # Make sure first element is the command
@@ -262,8 +282,8 @@ class LinkCommand():
             return outarg
         
         # Read memory state
-        outarg["mem_size"] = read_buf[1] + read_buf[2] * 0xFF
-        outarg["mem_used"] = read_buf[3] + read_buf[4] * 0xFF
+        outarg["mem_size"] = read_buf[1] + read_buf[2] * 0x100
+        outarg["mem_used"] = read_buf[3] + read_buf[4] * 0x100
         
         logging.info("Memory state on %s: %d/%d used.",
                      self.machine_name, outarg["mem_used"],
@@ -273,7 +293,7 @@ class LinkCommand():
         return outarg
 
     def clear_memory(self):
-        """ Send the register command."""
+        """ Send the clear memory command."""
         return self.send_command([0xA6])
     
     def wait_rx(self):
@@ -452,7 +472,15 @@ class DummyRadio():
         return len(self.rx_buf)
 
     def available(self, pipe_num):        
-        return pipe_num == [0]
+        return pipe_num == [0] and self.rx_mode
+    
+    def startListening(self):
+        self.rx_mode = True
+        return
+    
+    def stopListening(self):
+        self.rx_mode = False
+        return
     
     def flush_rx(self):
         del self.rx_buf[:]
@@ -485,21 +513,21 @@ if __name__ == '__main__':
     # 1st machine (non-powered)
     radio.link_err(channels[0])
     print("\nThis machine is non-powered.")
-    print(links[0].register())
+    print(links[0].auto())
     
     # 2nd machine (failed its self-test)
     radio.machine_err(channels[1])
     print("\nThis machine should report trouble.")
-    print(links[1].register())
+    print(links[1].auto())
 
     # 3rd machine (going fine)
     radio.reply_err(channels[2])
     print("\nThis machine is not ready to acknowledge.")
-    print(links[2].register())
+    print(links[2].auto())
 
     radio.reply_ok(channels[2])
     print("\nThis machine is now ready.")
-    print(links[2].register())
+    print(links[2].auto())
 
     # Disable command
     print("\nDisabling functional machine.")

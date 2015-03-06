@@ -1,3 +1,9 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#
+# The server main program
+#
+
 import sys
 import ConfigParser
 import time
@@ -22,6 +28,7 @@ class PiAccessServer():
         self.config_filename = config_filename
         self.config = ConfigParser.RawConfigParser()    
         self.config.read(self.config_filename)
+        
         self.name = self.config.get('ACCESS_SERVER',
                                     'name')
         self.csv_filename = self.config.get('ACCESS_SERVER',
@@ -30,7 +37,7 @@ class PiAccessServer():
                                                'log_filename')
         self.number_machines = self.config.get('MACHINES',
                                                'number_machines')
-        self.mem_usage_threshold = self.config.get('MACHINES',
+        self.mem_usage_threshold = self.config.getfloat('MACHINES',
                                                'mem_usage_threshold')
 
         # Initialise log file (time not added by default because machine
@@ -40,11 +47,11 @@ class PiAccessServer():
                             level=logging.DEBUG)
     
         # Get machine names from database
-        if not piaccessserver_load():
+        if not self.load():
             return False
 
         # Initialise radio
-        if not piaccessserver_radio_init():
+        if not self.radio_init():
             return False
 
         # Create a link for each machine
@@ -57,7 +64,7 @@ class PiAccessServer():
                                                           channel,
                                                           machine_id)
         
-    def piaccessserver_load(self):
+    def load(self):
         # Initialise output arguments
         machines_db = []
         members_db = []
@@ -105,7 +112,7 @@ class PiAccessServer():
         
         return True
         
-    def piaccessserver_loop(self, config_filename, radio):
+    def loop(self, config_filename, radio):
         # Initialise output arguments
         machines_db = []
         members_db = []
@@ -142,14 +149,17 @@ class PiAccessServer():
         time.sleep(config.getfloat('ACCESS_SERVER', 'loop_delay'))
 
 
-    def piaccessserver_radio_init(self):
+    def radio_init(self, config_filename):
         # TODO: Check what are those for and validate parameters
         # TODO: Check for initialisation errors from radio
         self.pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
 
         self.radio = NRF24(GPIO, spidev.SpiDev())
-        self.radio.begin(0, 17)
+        self.radio.begin(0, 25)
         time.sleep(1)
+        # Set retries (delay, count)
+        self.number_machines = self.config.get('MACHINES',
+                                               'number_machines')
         self.radio.setRetries(15,15)
         self.radio.setPayloadSize(32)
         self.radio.setChannel(0x60)
@@ -173,8 +183,9 @@ if __name__ == '__main__':
     else:
         config_filename = 'piaccessserver.ini'
 
+    server = PiAccessServer(config_filename)
     # Initialise server
-    if not piaccessserver_init():
+    if not server.piaccessserver_init():
         sys.exit('Initialisation failed. Check log for details.')
 
     # Process server tasks
