@@ -1,0 +1,49 @@
+Todo list for doorlock
+- Build second module with wiegand reader
+- Add wiegand to nano code
+- PCB
+
+Todo for access servers
+- Build separate scripts for :
+  + database retrieval
+    o Query CiviCRM database
+    o Format data from SQL command output
+    o Write to file (csv)
+  + server logs date change 
+    o Move current software log file to archive folder
+    o Create new events file and set config file accordingly
+  + machine status check
+    o Poke machine and return status
+  + machine table update
+    o Read csv file
+    o Send update command to all machines
+  + machine enabling and disabling
+    o Send enable/disable command to machine
+  + machine logging dump to file
+    o Get logged events from all machines
+    o Write events to file (1 file per machine)
+  + machine event logs date change 
+    o Move current events file to archive folder for this machine
+    o Create new events file and set config file accordingly
+- Set up crontab on RPi
+  + Decide frequency for each operation
+  
+Todo for management:
+- Create management database for access servers, hostnames, passwords, machines
+  + Draft on personnal Dropbox
+- Make admin tools for operations
+  + Configure software and event logs download using SCP
+    o WinSCP under Windows
+    o ? under Linux
+  + Build a collection of Python/batch/bash scripts to perform remote tasks via SSH/SCP
+    o Machine status check, enabling and disabling, etc.
+    o Update the pi-access-server software from GitHub
+    o Any task available on the access server!
+  + Build a (PyQt4?) GUI to perform the same tasks
+
+
+
+
+
+
+
