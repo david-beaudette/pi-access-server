@@ -8,6 +8,7 @@ import sys
 import ConfigParser
 import time
 import logging
+import argparse
 
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
@@ -177,12 +178,20 @@ class PiAccessServer():
         return True
 
 if __name__ == '__main__':
-    # Check if a config filename was provided
-    if len(sys.argv) > 1:
-        config_filename = sys.argv[1]
-    else:
-        config_filename = 'piaccessserver.ini'
-
+    parser = argparse.ArgumentParser(description='Access server software on Raspberry Pi for managing RFID card readers on machines.')    
+    
+    #
+    #
+    #
+    #
+    #
+    #
+    #
+    #
+    #
+    #
+    
+    config_filename = 'piaccessserver.ini'
     server = PiAccessServer(config_filename)
     # Initialise server
     if not server.piaccessserver_init():
