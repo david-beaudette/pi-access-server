@@ -45,15 +45,27 @@ Raspberry Pi configuration to build an access server
   svn export https://github.com/david-beaudette/pi-access-server/trunk/ ~/pi-access-server
 
 11. Install the radio library in Python path
-  mv ~/pi-access-server/lib_nrf24/lib_nrf24.py /usr/lib/python2.7/dist-packages/
+  sudo mv ~/pi-access-server/lib_nrf24/lib_nrf24.py /usr/lib/python2.7/dist-packages/
 
 12. Make the piaccessserver application executable
   [to be documented]
 
-13. Configure cron to launch the script at startup.
+13. Configure cron to launch server functions at regular intervals
   [to be documented]
 
-14. Configure the access server parameters
-  [to be documented (edit the .ini file)]
+14. Change the RPi hostname (hostnames are managed in a LibreOffice spreadsheet)
+  Follow steps described in http://www.howtogeek.com/167195/how-to-change-your-raspberry-pi-or-other-linux-devices-hostname/
+
+14. Configure the access server parameters in the config file (settings are managed in a LibreOffice spreadsheet)
+  cd ~/pi-access-server
+  nano ~/pi-access-server/piaccessserver/piaccessserver.ini
+  Edit parameters
+  Save (Ctrl+o) and quit (Ctrl+x) nano editor
+  
 
 15. Reboot
+
+
+
+
+

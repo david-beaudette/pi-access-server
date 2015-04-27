@@ -1,45 +1,51 @@
 Todo list for doorlock
 - Build second module with wiegand reader
 - Add wiegand to nano code
-- PCB
+- Manufacture PCBs
+- Add double activation mode command
+- Document construction steps in Wiki
 
 Todo for access servers
 - Build separate scripts for :
-  + database retrieval
+  + database retrieval (server_db_retrieve)
     o Query CiviCRM database
     o Format data from SQL command output
     o Write to file (csv)
-  + server logs date change 
+  + server logs date change (server_new_log)
     o Move current software log file to archive folder
     o Create new events file and set config file accordingly
-  + machine status check
-    o Poke machine and return status
-  + machine table update
+  + commutator status check (commutator_check [name])
+    o Poke commutator and return status
+  + commutator table update (commutator_update [name])
     o Read csv file
-    o Send update command to all machines
-  + machine enabling and disabling
-    o Send enable/disable command to machine
-  + machine logging dump to file
-    o Get logged events from all machines
-    o Write events to file (1 file per machine)
-  + machine event logs date change 
-    o Move current events file to archive folder for this machine
+    o Send update command to all commutators
+  + commutator enabling, disabling and automatic mode setting (commutator_on [name], commutator_off [name], commutator_auto [name])
+    o Send enable/disable/auto command to commutator
+  + commutator logging dump to file (commutator_get_log [name])
+    o Get logged events from all commutators
+    o Write events to file (1 file per commutator)
+  + commutator event logs date change (commutator_new_log) 
+    o Move current events file to archive folder for this commutator
     o Create new events file and set config file accordingly
 - Set up crontab on RPi
   + Decide frequency for each operation
-  
+- Document features and usage in Wiki
+- Document construction steps in Wiki
+
 Todo for management:
-- Create management database for access servers, hostnames, passwords, machines
+- Create management database for access servers, hostnames, passwords, commutators
   + Draft on personnal Dropbox
 - Make admin tools for operations
   + Configure software and event logs download using SCP
     o WinSCP under Windows
     o ? under Linux
   + Build a collection of Python/batch/bash scripts to perform remote tasks via SSH/SCP
-    o Machine status check, enabling and disabling, etc.
+    o commutator status check, enabling and disabling, etc.
     o Update the pi-access-server software from GitHub
     o Any task available on the access server!
   + Build a (PyQt4?) GUI to perform the same tasks
+- Document design and implementation on Wiki  
+  
 
 
 
