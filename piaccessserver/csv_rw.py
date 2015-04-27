@@ -15,7 +15,7 @@ def member_access_write(filename,
         csv_header.append(machine[1])
 
     # Write CSV file with returned results
-    with open(filename, 'w') as csvfile:
+    with open(filename, 'wb') as csvfile:
         infowriter = csv.writer(csvfile, delimiter=';')
         infowriter.writerow(csv_header)
         for member in member_req:
