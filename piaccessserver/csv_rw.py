@@ -65,7 +65,7 @@ def member_access_read(filename,
             # Add an empty autorisation list
             autorisations.append([])
         for member in inforeader:
-            print member[1]
+            #print member[1]
             # Check if member has a valid card number
             if len(member[3]) == 8 and \
                all(c in string.hexdigits for c in member[3]):
