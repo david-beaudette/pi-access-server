@@ -1,10 +1,11 @@
 # coding: utf-8
 import ConfigParser
+import logging
 import csv
 import string
 import MySQLdb
 
-def read_db(machines, members, cards, tags, config_filename):
+def read_db(commutators, members, cards, tags, config_filename):
     # Read parameter file
     config = ConfigParser.RawConfigParser()
     config.read(config_filename)
@@ -23,8 +24,8 @@ def read_db(machines, members, cards, tags, config_filename):
 
     cur = db.cursor()
 
-    # Find the tags related to access parameters (machine names)
-    get_machine_req = """SELECT  `civicrm_tag`.`id`,
+    # Find the tags related to access parameters (commutator names)
+    get_commutator_req = """SELECT  `civicrm_tag`.`id`,
                                `civicrm_tag`.`name`
                        FROM    `sherbro3_civicrm`.`civicrm_tag`
                        WHERE   `civicrm_tag`.`parent_id` =
@@ -59,9 +60,9 @@ def read_db(machines, members, cards, tags, config_filename):
                        WHERE   `civicrm_tag`.`name` = 'Accès'));"""
 
     try:
-        cur.execute(get_machine_req)
-        machine_req = cur.fetchall()
-        #print(machine_req)
+        cur.execute(get_commutator_req)
+        commutator_req = cur.fetchall()
+        #print(commutator_req)
         
         cur.execute(get_card_req)
         card_req = cur.fetchall()
@@ -75,18 +76,16 @@ def read_db(machines, members, cards, tags, config_filename):
         tag_req = cur.fetchall()
         #print(tag_req)
 
-        print("db_connect-read_db: All data retrieved from database.")
+        logging.info("All data retrieved from database.")
 
-        machines.extend(machine_req)
+        commutators.extend(commutator_req)
         cards.extend(card_req)
         members.extend(member_req)
         tags.extend(tag_req)
         return True
         
     except MySQLdb.Error as e:
-        print("An error has been passed. %s" % e)
-        print("Will load values from csv file if found.")
-        # Real code should do that...
+        logging.error("Impossible to retrieve data: error received: %s" % e)
         return False
         
     finally:            
@@ -97,17 +96,17 @@ def read_db(machines, members, cards, tags, config_filename):
 
 # UNIT TEST (if script is executed directly)
 if __name__ == '__main__':
-    machines = []
+    commutators = []
     members = []
     cards = []
     tags = []
     
     # Test db data retrieval
     config_filename = 'db_connect_fields.ignored'
-    read_db(machines, members, cards, tags, config_filename)
+    read_db(commutators, members, cards, tags, config_filename)
 
     # Inspect outputs
-    print(machines) 
+    print(commutators) 
     print(members) 
     print(cards) 
     print(tags) 
