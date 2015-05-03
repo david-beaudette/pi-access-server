@@ -7,24 +7,24 @@ class LinkCommand():
     each with its own RF channel (TBD if a different pipe address
     is required)
     """
-    def __init__(self, radio, channel, machine_id, machine_name):
+    def __init__(self, radio, channel, commutator_id, commutator_name):
         self.radio         = radio
         self.channel       = channel
-        self.machine_id    = machine_id
-        self.machine_name  = machine_name
+        self.commutator_id    = commutator_id
+        self.commutator_name  = commutator_name
         self.wait_rx_sleep = 0.000001
         self.wait_rx_retry = 10000
         
     def init_radio(self):
         """ Used to send any command and check for ACK """
-        # Configure the radio on the right RF channel for the machine
+        # Configure the radio on the right RF channel for the commutator
         self.radio.setChannel(self.channel)
 
         # Empty transmission buffers
         self.radio.stopListening()
 
         logging.debug("LinkCommand-init_radio: Radio initialised for %s on channel %d.",
-                      self.machine_name, self.channel)
+                      self.commutator_name, self.channel)
         
     def send_command(self, command, rx_len = 1):
         """ Used to send any command and check for ACK """
@@ -34,7 +34,7 @@ class LinkCommand():
 
         # Initialise outputs
         outarg = {"link_ok":    False,
-                  "machine_ok": False,
+                  "commutator_ok": False,
                   "reply_ok":   False,
                   "reply_buf":  []}
         
@@ -52,20 +52,20 @@ class LinkCommand():
                     if   read_buf[0] == 0xA0:
                         outarg["reply_ok"]   = True
                         logging.error("Machine %s has a problem. Please verify.",
-                                      self.machine_name)
+                                      self.commutator_name)
                     elif read_buf[0] == 0xAF:
-                        outarg["machine_ok"] = True
+                        outarg["commutator_ok"] = True
                         outarg["reply_ok"]   = True
                 else:
                     logging.warning("Machine %s reply data length (%d) is abnormal.",
-                                    self.machine_name, len(read_buf))
+                                    self.commutator_name, len(read_buf))
 
             else:
                 logging.warning("No response from %s.",
-                                self.machine_name)
+                                self.commutator_name)
         else:
             logging.warning("Unable to write %s command to %s. Radio link is down.",
-                            hex(command[0]), self.machine_name)
+                            hex(command[0]), self.commutator_name)
         for byte in read_buf:
             outarg["reply_buf"].append(byte)
         return outarg    
@@ -74,11 +74,11 @@ class LinkCommand():
         """ Send the auto command."""
         return self.send_command([0xA0])
     
-    def enable_machine(self):
+    def enable_commutator(self):
         """ Send the enable command."""
         return self.send_command([0xA1])
 
-    def disable_machine(self):
+    def disable_commutator(self):
         """ Send the disable command."""
         return self.send_command([0xA2])
 
@@ -94,16 +94,16 @@ class LinkCommand():
         # Ask for remaining entries one by one
         num_entries = 1
         while num_entries > 0:
-            # Send command and validate machine state
+            # Send command and validate commutator state
             cmd_state = self.send_command([0xA3],9)
             outarg.update(cmd_state)
 
             if not (outarg["link_ok"] and
                     outarg["reply_ok"] and
-                    outarg["machine_ok"]):
+                    outarg["commutator_ok"]):
                 # Command was not executed successfully
                 logging.warning("Unable to retrieve log entries from %s",
-                                self.machine_name)
+                                self.commutator_name)
                 return outarg
 
             # Read the remainder of the packet
@@ -112,7 +112,7 @@ class LinkCommand():
                 # Make sure first element is the command
                 if (read_buf[0] != 0xA3):
                     logging.error("%s did not answer with sent command as expected.",
-                                  self.machine_name)
+                                  self.commutator_name)
                     return outarg
                 
                 # Read number of remaining entries
@@ -121,7 +121,7 @@ class LinkCommand():
                     # No log entries to add
                     outarg["read_ok"] = True
                     logging.debug("No new log entries for %s.",
-                                  self.machine_name)
+                                  self.commutator_name)
                     return outarg
                 
                 # Only update log count if higher
@@ -134,7 +134,7 @@ class LinkCommand():
                 outarg["log_times"].append(datetime.utcnow() - \
                                        timedelta(seconds=read_buf[7]))
                 logging.info("Machine: %s; Time: %s; Event code %s; User %s",
-                             self.machine_name,
+                             self.commutator_name,
                              str(outarg["log_times"][-1].strftime("%Y-%m-%d %H:%M:%S")),
                              hex(outarg["log_codes"][-1]),
                              hex(0x01000000 * outarg["log_users"][-1][0] + 
@@ -145,7 +145,7 @@ class LinkCommand():
             else:
                 # Not enough data bytes were received
                 logging.error("%s did not answer with enough bytes.",
-                                  self.machine_name)
+                                  self.commutator_name)
                 return outarg
         
         # Everything went fine
@@ -161,7 +161,7 @@ class LinkCommand():
         table_size = len(table[0])
         outarg = {"send_ok":    False,
                   "recv_ok":    False,
-                  "machine_ok": False,
+                  "commutator_ok": False,
                   "update_ok":  False,
                   "num_entries": table_size,
                   "num_authmod": 0,
@@ -179,7 +179,7 @@ class LinkCommand():
             print command
             if not self.radio.write(command):
                 logging.warning("Unable to write %s command to %s. Radio link is down.",
-                                 hex(command[0]), self.machine_name)
+                                 hex(command[0]), self.commutator_name)
                 return outarg
             logging.debug("Command #%d sent.", i)
             # Wait for answer
@@ -189,7 +189,7 @@ class LinkCommand():
                 # Only write operation succeeded, exit
                 outarg["send_ok"] = True
                 logging.warning("No response from %s.",
-                                self.machine_name)
+                                self.commutator_name)
                 return outarg
             
             # Read received buffer
@@ -198,7 +198,7 @@ class LinkCommand():
             if not len(read_buf) == 3:
                 outarg["recv_ok"] = False
                 logging.warning("Machine %s reply data length (%d) is abnormal.",
-                                self.machine_name, len(read_buf))
+                                self.commutator_name, len(read_buf))
                 return outarg
             
             # Check received state
@@ -207,7 +207,7 @@ class LinkCommand():
                 outarg["send_ok"] = True
                 outarg["recv_ok"] = True
                 logging.error("Machine %s has a problem. Please verify.",
-                                  self.machine_name)
+                                  self.commutator_name)
                 return outarg
                 
             # Check command byte
@@ -215,7 +215,7 @@ class LinkCommand():
                 # Returned command does not match, exit
                 outarg["send_ok"] = True
                 logging.error("%s did not answer with sent command as expected.",
-                               self.machine_name)
+                               self.commutator_name)
                 return outarg
             
             # Check how this entry was managed
@@ -243,10 +243,10 @@ class LinkCommand():
         outarg["send_ok"] = True
         outarg["recv_ok"] = True
         outarg["update_ok"] = True
-        outarg["machine_ok"] = True
+        outarg["commutator_ok"] = True
 
         logging.info("Table updated on %s; table size: %d; %d card numbers were added; %d authorisations were modified.",
-                     self.machine_name,
+                     self.commutator_name,
                      outarg["num_entries"],
                      outarg["num_newcard"],
                      outarg["num_authmod"])
@@ -255,16 +255,16 @@ class LinkCommand():
     
     def check_memory(self):
         outarg = {"read_ok": False}
-        # Send command and validate machine state
+        # Send command and validate commutator state
         cmd_state = self.send_command([0xA5], 6)
         outarg.update(cmd_state)
         
         if not (outarg["link_ok"] and
                 outarg["reply_ok"] and
-                outarg["machine_ok"]):
+                outarg["commutator_ok"]):
             # Command was not executed successfully
             logging.warning("Unable to get memory size from %s",
-                             self.machine_name)
+                             self.commutator_name)
             return outarg
 
         # Read the remainder of the packet
@@ -272,13 +272,13 @@ class LinkCommand():
         if not len(read_buf) == 5:
             # Invalid message received
             logging.error("%s did not answer with enough bytes.",
-                          self.machine_name)
+                          self.commutator_name)
             return outarg
 
         # Make sure first element is the command
         if (read_buf[0] != 0xA5):
             logging.error("%s did not answer with sent command as expected.",
-                               self.machine_name)
+                               self.commutator_name)
             return outarg
         
         # Read memory state
@@ -286,7 +286,7 @@ class LinkCommand():
         outarg["mem_used"] = read_buf[3] + read_buf[4] * 0x100
         
         logging.info("Memory state on %s: %d/%d used.",
-                     self.machine_name, outarg["mem_used"],
+                     self.commutator_name, outarg["mem_used"],
                      outarg["mem_size"])
 
         outarg["read_ok"] = True
@@ -313,11 +313,11 @@ class DummyRadio():
     def __init__(self):
         # Error emulation
         self.b_link_err    = False
-        self.b_machine_err = False
+        self.b_commutator_err = False
         self.b_reply_err   = False
         
         self.link_errors    = {}
-        self.machine_errors = {}
+        self.commutator_errors = {}
         self.reply_errors   = {}
         
         # Communication buffers
@@ -334,8 +334,8 @@ class DummyRadio():
 
     def link_err(self, channel):    self.link_errors[hex(channel)] = True       
     def link_ok(self, channel):     self.link_errors[hex(channel)] = False       
-    def machine_err(self, channel): self.machine_errors[hex(channel)] = True       
-    def machine_ok(self, channel):  self.machine_errors[hex(channel)] = False       
+    def commutator_err(self, channel): self.commutator_errors[hex(channel)] = True       
+    def commutator_ok(self, channel):  self.commutator_errors[hex(channel)] = False       
     def reply_err(self, channel):   self.reply_errors[hex(channel)] = True       
     def reply_ok(self, channel):    self.reply_errors[hex(channel)] = False       
 
@@ -346,11 +346,11 @@ class DummyRadio():
             self.b_link_err = self.link_errors[hex(channel)]
         else:
             self.b_link_err = False
-        # Set machine error if specified for this channel
-        if hex(channel) in self.machine_errors:
-            self.b_machine_err = self.machine_errors[hex(channel)]
+        # Set commutator error if specified for this channel
+        if hex(channel) in self.commutator_errors:
+            self.b_commutator_err = self.commutator_errors[hex(channel)]
         else:
-            self.b_machine_err = False
+            self.b_commutator_err = False
         # Set reply error if specified for this channel
         if hex(channel) in self.reply_errors:
             self.b_reply_err = self.reply_errors[hex(channel)]
@@ -375,7 +375,7 @@ class DummyRadio():
             buf[0] == 0xA1 or
             buf[0] == 0xA2):
             # Register, enable or disable command, answer state
-            self.rx_buf = [0xA0 + 0x0F * (self.b_machine_err)]
+            self.rx_buf = [0xAF + 0x0F * (self.b_commutator_err)]
             print("Machine will receive %s command." % hex(buf[0]))
 
         elif buf[0] == 0xA3:
@@ -383,7 +383,7 @@ class DummyRadio():
             num_entries = len(self.log_code)
             if num_entries == 0:
                 # Send empty log buffer
-                self.rx_buf.append(0xA0 + 0x0F * (self.b_machine_err)) 
+                self.rx_buf.append(0xAF + 0x0F * (self.b_commutator_err)) 
                 # Repeat the command itself
                 self.rx_buf.append(0xA3)
                 # The rest is empty
@@ -394,7 +394,7 @@ class DummyRadio():
                 self.rx_buf.append(0)
             else:
                 # Dump 1 log entry
-                self.rx_buf.append(0xA0 + 0x0F * (self.b_machine_err)) 
+                self.rx_buf.append(0xAF + 0x0F * (self.b_commutator_err)) 
                 # Repeat the command itself
                 self.rx_buf.append(0xA3) 
                 # Number of remaining entries, including this one
@@ -412,7 +412,7 @@ class DummyRadio():
 
         elif buf[0] == 0xA4:
             # Machine state
-            self.rx_buf.append(0xA0 + 0x0F * (self.b_machine_err)) 
+            self.rx_buf.append(0xAF + 0x0F * (self.b_commutator_err)) 
             # Repeat the command itself
             self.rx_buf.append(0xA4)
             # Do nothing if the number of remaining entries is 0
@@ -441,7 +441,7 @@ class DummyRadio():
             
         elif buf[0] == 0xA5:
             # Dump 1 log entry
-            self.rx_buf.append(0xA0 + 0x0F * (self.b_machine_err)) 
+            self.rx_buf.append(0xAF + 0x0F * (self.b_commutator_err)) 
             # Repeat the command itself
             self.rx_buf.append(0xA5) 
             # Memory total size
@@ -454,7 +454,7 @@ class DummyRadio():
             
         elif buf[0] == 0xA6:
             # Answer state
-            self.rx_buf = [0xA0 + 0x0F * (self.b_machine_err)]
+            self.rx_buf = [0xAF + 0x0F * (self.b_commutator_err)]
             # Remove all cards from memory
             self.access_table = [[],[]]
             radio.mem_used = 0
@@ -498,53 +498,53 @@ if __name__ == '__main__':
     # Init shared radio
     radio = DummyRadio()
 
-    # Define machines
-    num_machines = 3
+    # Define commutators
+    num_commutators = 3
     channels = [32, 33, 34]
-    machine_ids = [0xA, 0xB, 0xC]
-    machine_names = ['Tour', 'Toupie', 'Banc de scie']
+    commutator_ids = [0xA, 0xB, 0xC]
+    commutator_names = ['Tour', 'Toupie', 'Banc de scie']
 
-    # Create a link for each machine
+    # Create a link for each commutator
     links = []
-    for n in range(num_machines):
+    for n in range(num_commutators):
         links.append(LinkCommand(radio, channels[n],
-                                 machine_ids[n], machine_names[n]))
+                                 commutator_ids[n], commutator_names[n]))
 
-    # 1st machine (non-powered)
+    # 1st commutator (non-powered)
     radio.link_err(channels[0])
-    print("\nThis machine is non-powered.")
+    print("\nThis commutator is non-powered.")
     print(links[0].auto())
     
-    # 2nd machine (failed its self-test)
-    radio.machine_err(channels[1])
-    print("\nThis machine should report trouble.")
+    # 2nd commutator (failed its self-test)
+    radio.commutator_err(channels[1])
+    print("\nThis commutator should report trouble.")
     print(links[1].auto())
 
-    # 3rd machine (going fine)
+    # 3rd commutator (going fine)
     radio.reply_err(channels[2])
-    print("\nThis machine is not ready to acknowledge.")
+    print("\nThis commutator is not ready to acknowledge.")
     print(links[2].auto())
 
     radio.reply_ok(channels[2])
-    print("\nThis machine is now ready.")
+    print("\nThis commutator is now ready.")
     print(links[2].auto())
 
     # Disable command
-    print("\nDisabling functional machine.")
-    print(links[2].disable_machine())
+    print("\nDisabling functional commutator.")
+    print(links[2].disable_commutator())
 
     # Enable command
-    print("\nEnabling functional machine.")
-    print(links[2].enable_machine())
+    print("\nEnabling functional commutator.")
+    print(links[2].enable_commutator())
     
     # Dump log entries command
-    print("\nExpecting no log entries from machine.")
+    print("\nExpecting no log entries from commutator.")
     radio.log_code = []
     radio.log_age  = []
     radio.log_user = []
     print(links[2].dump_logging())
     
-    # Fill machine with dummy log entries
+    # Fill commutator with dummy log entries
     radio.log_code = [0x30, 0x33, 0x30, 0x31, 0x33]    
     radio.log_age  = [300, 270, 180, 150, 60]    
     radio.log_user = [[0x70, 0x40, 0x84, 0x0B], # User1 attempted 5 min ago
@@ -555,14 +555,14 @@ if __name__ == '__main__':
                       [0x45, 0x55, 0x55, 0x55], # User2 confirms 30 s later
                       [0x70, 0x40, 0x84, 0x0B]] # User1 logs out 1 min ago 
 
-    print("\nExpecting 5 log entries from machine.")
+    print("\nExpecting 5 log entries from commutator.")
     print(links[2].dump_logging())
 
     # Check empty memory
     print("\nExpecting empty memory.")
     print(links[2].check_memory())    
 
-        # Fill machine access table prior to update
+    # Fill commutator access table prior to update
     radio.access_table = [[[0x70, 0x40, 0x84, 0x0B],
                            [0x45, 0x55, 0x55, 0x55],
                            [0x67, 0x89, 0x23, 0x11],
