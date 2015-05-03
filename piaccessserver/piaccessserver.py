@@ -12,35 +12,44 @@ import argparse
 from glob import glob
 import shutil
 import os
+import socket
 
 import db_connect
 import link_command
 import csv_rw
 
-def server_db_retrieve(args):
-    print('Retrieving tables from database.')
-    machines = []
+# Main commands
+def server_db_retrieve(args = []):
+    """
+    Retrieves the access tables from the database.
+    """
+    logging.info('Retrieving tables from database.')
+    commutators = []
     members = []
     cards = []
     tags = []
     
     # Test db data retrieval
-    config_filename = 'db_connect_fields.ignored'
-    db_connect.read_db(machines, members, cards, tags, config_filename)
+    config = get_server_config()
+    db_config_file = config.get('DATABASE', 'db_config_file')
+    db_connect.read_db(commutators, members, cards, tags, db_config_file)
     csv_filename = 'access_tables.csv'
-    print('Writing access tables to file.')
+    logging.info('Writing access tables to file.')
     csv_rw.member_access_write(csv_filename,
-                               machines,
+                               commutators,
                                members,
                                cards,
                                tags)
-    print('Access tables were written to %s.' % csv_filename)
+    logging.info('Access tables were written to %s.' % csv_filename)
+
 
 def server_new_log(args):
+    """
+    Archives the current software event log, if any, and creates a new timestamped log.
+    """
     print('Starting a new software events log file.')
     # Find existing log
     log_file = glob('piaccessserver_*.log')
-    logging.shutdown()
     if len(log_file) > 0:
         archive_folder_name = 'archives'
         print('Archiving %s file in folder %s.' % (log_file[0], archive_folder_name))
@@ -51,45 +60,181 @@ def server_new_log(args):
     log_file = get_sw_log_filename()
     print('Created new %s file.' % log_file[0])
     logging.basicConfig(filename=log_file[0],
-                        format='%(asctime)s:%(levelname)s:%(message)s',
+                        format='%(asctime)s:%(levelname)s:%(funcName)s:%(message)s',
                         level=logging.DEBUG)
     logging.info('Software events log file creation.')
     
 def commutator_check(args):
-    print('Commutator %s is fine.' % args.commutator_name)
-
+    send_commutator_command(args.commutator_name, 'check')
+                
 def commutator_update(args):
-    print('Commutator %s access tables were updated.' % args.commutator_name)
-
+    """Updates the access tables of one or all the commutators."""
+    # Check if a table is available
+    csv_filename = glob('access_tables.csv')
+    if len(csv_filename) == 0:
+        # Generate access table file
+        server_db_retrieve(args)
+        
+    # Load tables from file
+    commutators = []
+    cards = []
+    authorisations = []
+    csv_rw.member_access_read('access_tables.csv', commutators,
+                              cards, authorisations)
+    
+    # Load config file
+    config = get_server_config()
+    
+    # Generate commutator list
+    if(args.commutator_name != 'all'):      
+        index = commutators.index(args.commutator_name)
+        commutators = [commutators[index]]
+        authorisations = [authorisations[index]]
+      
+    # Update commutators
+    for index, commutator in enumerate(commutators):
+        if config.has_section(commutator):
+            # Load radio parameters from config file
+            channel = config.getint(commutator, 'channel')
+            commutator_id = config.getint(commutator, 'id')
+            # Create a link for this commutator
+            print('Would create a link to %s (id = %d) on channel %d.' % (commutator, commutator_id, channel))
+            #link = LinkCommand(radio, channel,
+            #                   commutator_id, commutator))
+            print [cards, authorisations[index]]
+            #status = link.update_table([cards, authorisations[index]])
+            
+    # Generate commutator list
+    if(args.commutator_name == 'all'):      
+      logging.info('The access tables of all %0.0f commutators were updated.' % len(commutators))
+    else:
+      logging.info('The access tables of commutator %s were updated.' % args.commutator_name)
+      
 def commutator_on(args):
-    print('Commutator %s is now always on.' % args.commutator_name)
+    send_commutator_command(args.commutator_name, 'on')
 
 def commutator_off(args):
-    print('Commutator %s is now always off.' % args.commutator_name)
+    send_commutator_command(args.commutator_name, 'off')
 
 def commutator_auto(args):
-    print('Commutator %s now activates using cards and access tables.' % args.commutator_name)
+    send_commutator_command(args.commutator_name, 'auto')
 
 def commutator_get_log(args):
-    print('Commutator %s logs were retrieved.' % args.commutator_name)
+    logging.info('Commutator %s logs were retrieved.' % args.commutator_name)
 
 def commutator_new_log(args):
-    print('Commutator %s logs will be saved in a new file.' % args.commutator_name)
-
+    """
+    Archives the commutator event log file, if any, and starts a new timestamped log. If 
+    the name if the commutator is provided, only affects this commutator's event log file.
+    """
+    if(args.commutator_name == 'all'):      
+      # Get commutator names from server
+      commutators = get_commutators()
+      logging.info('The event log files of all %0.0f commutators will be saved to new files.' % len(commutators))
+    else:
+      logging.info('The event log file of commutator %s will be saved to a new file.' % args.commutator_name)
+      commutators = [args.commutator_name]
+      
+    archive_folder_name = 'archives'
+    for commutator in commutators:
+      log_file = glob('events_' + commutator + '_*.log')
+      if len(log_file) > 0:
+          if not os.path.exists(archive_folder_name):
+              os.makedirs(archive_folder_name)
+          shutil.move(log_file[0], archive_folder_name + os.path.sep + log_file[0])
+          logging.info('Archived %s file in folder %s.' % (log_file[0], archive_folder_name))
+      # Create another log file
+      log_file = 'events_' + commutator + '_' + strftime("%Y-%m-%d_%Hh%Mm%Ss") + '.log'
+      open(log_file, 'a').close()
+      logging.info('Created new commutator events log file %s.' % log_file)
+     
+# Support functions
 def get_sw_log_filename():
     log_file = glob('piaccessserver_*.log')
     if len(log_file) == 0:
         # Create file with current time
         log_file.append('piaccessserver_' + strftime("%Y-%m-%d_%Hh%Mm%Ss") + '.log')
-    return log_file   
+    return log_file
 
-if __name__ == '__main__':
-    # Set software event logging
-    log_file = get_sw_log_filename()
-    logging.basicConfig(filename=log_file[0],
-                        format='%(asctime)s:%(levelname)s:%(message)s',
-                        level=logging.DEBUG)
+def get_commutator_log_filename():
+    log_file = glob('events_' + commutator + '_*.log')
+    if len(log_file) == 0:
+        # Create file with current time
+        log_file.append('events_' + commutator + '_' + strftime("%Y-%m-%d_%Hh%Mm%Ss") + '.log')
+        open(log_file, 'a').close()
+    return log_file
+
+def get_server_config():    
+    config_filename = 'piaccessserver.ini'
+    config = ConfigParser.RawConfigParser()    
+    config.read(config_filename)
+    return config
+
+def get_commutators():
+    config = get_server_config()
     
+    # Check if a table is available
+    csv_filename = glob('access_tables.csv')
+    if len(csv_filename) == 0:
+        # Generate access table file
+        server_db_retrieve(args)
+        
+    # Load tables from file
+    commutators = []
+    csv_rw.member_access_read('access_tables.csv', commutators, [], [])
+
+    for commutator in commutators:
+      # Find section in config file
+      if config.has_section(commutator[1]):
+          commutators.append(commutator[1])
+      
+    return commutators
+
+def send_commutator_command(commutator_name, command_name):    
+    # Load config file
+    config = get_server_config()
+    
+    if(commutator_name == 'all'):      
+      # Get commutator names from server
+      commutators = get_commutators()
+    else:
+      commutators = [commutator_name]
+      
+    # Update commutators
+    for index, commutator in enumerate(commutators):
+        if config.has_section(commutator):
+            # Load radio parameters from config file
+            channel = config.getint(commutator, 'channel')
+            commutator_id = config.getint(commutator, 'id')
+            # Create a link for this commutator
+            print('Would create a link to %s (id = %d) on channel %d.' % (commutator, commutator_id, channel))
+            #link = LinkCommand(radio, channel,
+            #                   commutator_id, commutator))
+            status = {"commutator_ok": True}
+            if command_name == 'check':
+                #status = link.auto()
+                if status["commutator_ok"]:
+                    print('Commutator %s is functional.' % commutator)
+                    logging.info('Commutator %s is functional.' % commutator)
+            elif command_name == 'auto':
+                #status = link.auto()
+                if status["commutator_ok"]:
+                    print('Commutator %s set to automatic mode.' % commutator)
+                    logging.info('Commutator %s set to automatic mode.' % commutator)
+            elif command_name == 'on':
+                #status = link.enable_commutator()
+                if status["commutator_ok"]:
+                    print('Commutator %s set to always on mode.' % commutator)
+                    logging.info('Commutator %s set to always on mode.' % commutator)
+            elif command_name == 'off':
+                #status = link.disable_commutator()
+                if status["commutator_ok"]:
+                    print('Commutator %s set to always off mode.' % commutator)
+                    logging.info('Commutator %s set to always off mode.' % commutator)
+              
+
+    
+if __name__ == '__main__':
     # Create the top-level parser
     parser = argparse.ArgumentParser(version='1.0', description='Access server software for managing RFID commutators.')    
     subparsers = parser.add_subparsers()
@@ -131,6 +276,16 @@ if __name__ == '__main__':
     parser_sdr.set_defaults(func=commutator_new_log)
         
     args = parser.parse_args()
+    
+    # Set software event logging
+    args_vars = vars(args)
+    if(args_vars['func'].__name__ != 'server_new_log'):
+      log_file = get_sw_log_filename()
+      logging.basicConfig(filename=log_file[0],
+                          format='%(asctime)s:%(levelname)s:%(funcName)s:%(message)s',
+                          level=logging.DEBUG)
+    
+    # Execute required function 
     args.func(args)
 
         
