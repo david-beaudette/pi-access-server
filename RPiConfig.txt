@@ -56,6 +56,12 @@ Raspberry Pi configuration to build an access server
 14. Change the RPi hostname (hostnames are managed in a LibreOffice spreadsheet)
   Follow steps described in http://www.howtogeek.com/167195/how-to-change-your-raspberry-pi-or-other-linux-devices-hostname/
 
+15. Install the avahi-daemon network tool (http://www.howtogeek.com/167190/how-and-why-to-assign-the-.local-domain-to-your-raspberry-pi/)
+  sudo apt-get install avahi-daemon
+  Y
+  If you are going to communicate with the RPi from a Windows machine, follow the link to download the Apple Bonjour software to resolve fabpiXXX.local
+
+  
 14. Configure the access server parameters in the config file (settings are managed in a LibreOffice spreadsheet)
   cd ~/pi-access-server
   nano ~/pi-access-server/piaccessserver/piaccessserver.ini
