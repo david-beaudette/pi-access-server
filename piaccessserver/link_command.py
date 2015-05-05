@@ -70,6 +70,18 @@ class LinkCommand():
             outarg["reply_buf"].append(byte)
         return outarg    
     
+    def check(self):
+        """ Send the check command."""
+        return self.send_command([0xA9])
+    
+    def double_activation(self):
+        """ Send the double_activation command."""
+        return self.send_command([0xA7])
+    
+    def single_activation(self):
+        """ Send the single_activation command."""
+        return self.send_command([0xA8])
+    
     def auto(self):
         """ Send the auto command."""
         return self.send_command([0xA0])
@@ -373,9 +385,12 @@ class DummyRadio():
         # Return the expected reply from Arduino
         if (buf[0] == 0xA0 or
             buf[0] == 0xA1 or
-            buf[0] == 0xA2):
+            buf[0] == 0xA2 or
+            buf[0] == 0xA7 or
+            buf[0] == 0xA8 or
+            buf[0] == 0xA9):
             # Register, enable or disable command, answer state
-            self.rx_buf = [0xAF + 0x0F * (self.b_commutator_err)]
+            self.rx_buf = [0xAF - 0x0F * (self.b_commutator_err)]
             print("Machine will receive %s command." % hex(buf[0]))
 
         elif buf[0] == 0xA3:
@@ -513,21 +528,30 @@ if __name__ == '__main__':
     # 1st commutator (non-powered)
     radio.link_err(channels[0])
     print("\nThis commutator is non-powered.")
-    print(links[0].auto())
+    print(links[0].check())
     
     # 2nd commutator (failed its self-test)
     radio.commutator_err(channels[1])
     print("\nThis commutator should report trouble.")
-    print(links[1].auto())
+    print(links[1].check())
 
     # 3rd commutator (going fine)
     radio.reply_err(channels[2])
     print("\nThis commutator is not ready to acknowledge.")
-    print(links[2].auto())
+    print(links[2].check())
 
     radio.reply_ok(channels[2])
     print("\nThis commutator is now ready.")
+    print(links[2].check())
+
+    print("\nReply from auto command.")
     print(links[2].auto())
+
+    print("\nReply from double activation command.")
+    print(links[2].double_activation())
+
+    print("\nReply from single activation command.")
+    print(links[2].single_activation())
 
     # Disable command
     print("\nDisabling functional commutator.")
