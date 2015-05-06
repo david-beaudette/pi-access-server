@@ -4,8 +4,7 @@ import logging
 
 class LinkCommand():
     """ A single radio is shared between several LinkCommand instances,
-    each with its own RF channel (TBD if a different pipe address
-    is required)
+    each with its own RF channel.
     """
     def __init__(self, radio, channel, commutator_id, commutator_name):
         self.radio         = radio
@@ -186,8 +185,9 @@ class LinkCommand():
             # Prepare data to be sent
             command = [0xA4, table_size-i]
             command.append(int(table[1][i])) # authorisation
-            for byte in table[0][i]:
-                command.append(byte) # each byte from card ID
+            for byte_num in range(0, len(table[0][i]), 2):
+                command.append(int(table[0][i][byte_num], 16) * 0x10 + 
+                               int(table[0][i][byte_num+1], 16))
             print command
             if not self.radio.write(command):
                 logging.warning("Unable to write %s command to %s. Radio link is down.",

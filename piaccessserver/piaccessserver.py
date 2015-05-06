@@ -4,9 +4,10 @@
 # The server main program
 #
 
+# Import Python modules
 import sys
 import ConfigParser
-from time import strftime
+from time import strftime, sleep
 import logging
 import argparse
 from glob import glob
@@ -14,9 +15,38 @@ import shutil
 import os
 import socket
 
+# Import project modules
 import db_connect
-import link_command
+from link_command import LinkCommand
 import csv_rw
+
+# Configure GPIO and SPI
+import RPi.GPIO as GPIO
+import spidev
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+
+# Configure radio
+from lib_nrf24 import NRF24
+w_pipe = [0xF0, 0xF0, 0xF0, 0xF0, 0xE1]
+r_pipe = [0xF0, 0xF0, 0xF0, 0xF0, 0xD2]
+
+radio = NRF24(GPIO, spidev.SpiDev())
+
+# Use configuration file parameter values to setup radio
+radio.begin(0, 25)
+#sleep(1)
+# setRetries(delay, count) -> both between 0 and 15
+radio.setRetries(15,15)
+radio.setPayloadSize(10)
+radio.setDataRate(NRF24.BR_1MBPS)
+radio.setPALevel(NRF24.PA_MAX)
+radio.setAutoAck(True)
+radio.enableDynamicPayloads()
+
+radio.openWritingPipe(w_pipe)
+radio.openReadingPipe(1, r_pipe)
+#radio.printDetails()
 
 # Main commands
 def server_db_retrieve(args = []):
@@ -87,9 +117,9 @@ def commutator_update(args):
     
     # Generate commutator list
     if(args.commutator_name != 'all'):      
-        index = commutators.index(args.commutator_name)
-        commutators = [commutators[index]]
-        authorisations = [authorisations[index]]
+        comm_num = commutators.index(args.commutator_name)
+        commutators = [commutators[comm_num]]
+        authorisations = [authorisations[comm_num]]
       
     # Update commutators
     for index, commutator in enumerate(commutators):
@@ -98,11 +128,11 @@ def commutator_update(args):
             channel = config.getint(commutator, 'channel')
             commutator_id = config.getint(commutator, 'id')
             # Create a link for this commutator
-            print('Would create a link to %s (id = %d) on channel %d.' % (commutator, commutator_id, channel))
-            #link = LinkCommand(radio, channel,
-            #                   commutator_id, commutator))
-            print [cards, authorisations[index]]
-            #status = link.update_table([cards, authorisations[index]])
+            print('Creating a link to %s (id = %d) on channel %d.' % (commutator, commutator_id, channel))
+            link = LinkCommand(radio, channel,
+                               commutator_id, commutator)
+            #print [cards, authorisations[index]]
+            status = link.update_table([cards, authorisations[index]])
             
     # Generate commutator list
     if(args.commutator_name == 'all'):      
@@ -207,31 +237,34 @@ def send_commutator_command(commutator_name, command_name):
             channel = config.getint(commutator, 'channel')
             commutator_id = config.getint(commutator, 'id')
             # Create a link for this commutator
-            print('Would create a link to %s (id = %d) on channel %d.' % (commutator, commutator_id, channel))
-            #link = LinkCommand(radio, channel,
-            #                   commutator_id, commutator))
+            print('Creating a link to %s (id = %d) on channel %d.' % (commutator, commutator_id, channel))
+            sleep(0.1)
+            link = LinkCommand(radio, channel,
+                               commutator_id, commutator)
             status = {"commutator_ok": True}
             if command_name == 'check':
-                #status = link.auto()
+                status = link.check()
                 if status["commutator_ok"]:
                     print('Commutator %s is functional.' % commutator)
                     logging.info('Commutator %s is functional.' % commutator)
+                else:
+                    print('Commutator %s did not answer as expected (%s)' % (commutator, status))
             elif command_name == 'auto':
-                #status = link.auto()
+                status = link.auto()
                 if status["commutator_ok"]:
                     print('Commutator %s set to automatic mode.' % commutator)
                     logging.info('Commutator %s set to automatic mode.' % commutator)
             elif command_name == 'on':
-                #status = link.enable_commutator()
+                status = link.enable_commutator()
                 if status["commutator_ok"]:
                     print('Commutator %s set to always on mode.' % commutator)
                     logging.info('Commutator %s set to always on mode.' % commutator)
             elif command_name == 'off':
-                #status = link.disable_commutator()
+                status = link.disable_commutator()
                 if status["commutator_ok"]:
                     print('Commutator %s set to always off mode.' % commutator)
                     logging.info('Commutator %s set to always off mode.' % commutator)
-              
+  
 
     
 if __name__ == '__main__':
