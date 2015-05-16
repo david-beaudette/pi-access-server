@@ -17,10 +17,10 @@ class LinkCommand():
     def init_radio(self):
         """ Used to send any command and check for ACK """
         # Configure the radio on the right RF channel for the commutator
-        self.radio.setChannel(self.channel)
-
-        # Empty transmission buffers
         self.radio.stopListening()
+        self.radio.powerDown()
+        self.radio.setChannel(self.channel)
+        self.radio.powerUp()
 
         logging.debug("LinkCommand-init_radio: Radio initialised for %s on channel %d.",
                       self.commutator_name, self.channel)
@@ -38,33 +38,42 @@ class LinkCommand():
                   "reply_buf":  []}
         
         read_buf = []
-        if self.radio.write(command):
-            # Write successful
-            outarg["link_ok"] = True
-            self.radio.startListening()
-            if self.wait_rx():
-                logging.debug("Transmission of %s command acknowledged.",
-                              hex(command[0]))
-                self.radio.read(read_buf, rx_len)
-                if len(read_buf) == rx_len:
-                    # Check received state
-                    if   read_buf[0] == 0xA0:
-                        outarg["reply_ok"]   = True
-                        logging.error("Machine %s has a problem. Please verify.",
-                                      self.commutator_name)
-                    elif read_buf[0] == 0xAF:
-                        outarg["commutator_ok"] = True
-                        outarg["reply_ok"]   = True
-                else:
-                    logging.warning("Machine %s reply data length (%d) is abnormal.",
-                                    self.commutator_name, len(read_buf))
+        read_check = False
+        check_iter = 0
+        while not read_check and check_iter < 10:
+            if self.radio.write(command):
+                # Write successful
+                outarg["link_ok"] = True
+                self.radio.startListening()
+                if self.wait_rx():
+                    logging.debug("Transmission of %s command acknowledged.",
+                                  hex(command[0]))
+                    self.radio.read(read_buf, rx_len)
+                    if len(read_buf) == rx_len:
+                        # Check received state
+                        if   read_buf[0] == 0xA0:
+                            outarg["reply_ok"]   = True
+                            logging.error("Machine %s has a problem. Please verify.",
+                                          self.commutator_name)
+                            read_check = True
+                        elif read_buf[0] == 0xAF:
+                            outarg["commutator_ok"] = True
+                            outarg["reply_ok"]   = True
+                            read_check = True
+                        else:
+                            # The value is not expected
+                            logging.warning("Machine %s reply state (%d) is unexpected (expecting 0 or 175).",
+                                            self.commutator_name, read_buf[0])
+                    else:
+                        logging.warning("Machine %s reply data length (%d) is abnormal.",
+                                        self.commutator_name, len(read_buf))
 
-            else:
-                logging.warning("No response from %s.",
-                                self.commutator_name)
-        else:
-            logging.warning("Unable to write %s command to %s. Radio link is down.",
-                            hex(command[0]), self.commutator_name)
+                else:
+                    logging.warning("No response from %s.",
+                                    self.commutator_name)
+            check_iter += 1
+            time.sleep(0.05)
+            
         for byte in read_buf:
             outarg["reply_buf"].append(byte)
         return outarg    

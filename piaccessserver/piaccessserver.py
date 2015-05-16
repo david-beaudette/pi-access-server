@@ -238,7 +238,6 @@ def send_commutator_command(commutator_name, command_name):
             commutator_id = config.getint(commutator, 'id')
             # Create a link for this commutator
             print('Creating a link to %s (id = %d) on channel %d.' % (commutator, commutator_id, channel))
-            sleep(0.1)
             link = LinkCommand(radio, channel,
                                commutator_id, commutator)
             status = {"commutator_ok": True}
@@ -254,17 +253,25 @@ def send_commutator_command(commutator_name, command_name):
                 if status["commutator_ok"]:
                     print('Commutator %s set to automatic mode.' % commutator)
                     logging.info('Commutator %s set to automatic mode.' % commutator)
+                else:
+                    print('Commutator %s did not answer as expected (%s)' % (commutator, status))
             elif command_name == 'on':
                 status = link.enable_commutator()
                 if status["commutator_ok"]:
                     print('Commutator %s set to always on mode.' % commutator)
                     logging.info('Commutator %s set to always on mode.' % commutator)
+                else:
+                    print('Commutator %s did not answer as expected (%s)' % (commutator, status))
             elif command_name == 'off':
                 status = link.disable_commutator()
                 if status["commutator_ok"]:
                     print('Commutator %s set to always off mode.' % commutator)
                     logging.info('Commutator %s set to always off mode.' % commutator)
-  
+                else:
+                    print('Commutator %s did not answer as expected (%s)' % (commutator, status))
+            obs = radio.read_register(NRF24.OBSERVE_TX)
+            radio.print_observe_tx(obs)
+
 
     
 if __name__ == '__main__':
