@@ -26,6 +26,11 @@ import spidev
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
+# Load configuration    
+config_filename = 'piaccessserver.ini'
+config = ConfigParser.RawConfigParser()    
+config.read(config_filename)
+
 # Configure radio
 from lib_nrf24 import NRF24
 w_pipe = [0xF0, 0xF0, 0xF0, 0xF0, 0xE1]
@@ -38,7 +43,7 @@ radio.begin(0, 25)
 #sleep(1)
 # setRetries(delay, count) -> both between 0 and 15
 radio.setRetries(15,15)
-radio.setPayloadSize(10)
+radio.setPayloadSize(12)
 radio.setDataRate(NRF24.BR_1MBPS)
 radio.setPALevel(NRF24.PA_MAX)
 radio.setAutoAck(True)
@@ -46,6 +51,7 @@ radio.enableDynamicPayloads()
 
 radio.openWritingPipe(w_pipe)
 radio.openReadingPipe(1, r_pipe)
+
 #radio.printDetails()
 
 # Main commands
@@ -60,7 +66,6 @@ def server_db_retrieve(args = []):
     tags = []
     
     # Test db data retrieval
-    config = get_server_config()
     db_config_file = config.get('DATABASE', 'db_config_file')
     db_connect.read_db(commutators, members, cards, tags, db_config_file)
     csv_filename = 'access_tables.csv'
@@ -112,9 +117,6 @@ def commutator_update(args):
     csv_rw.member_access_read('access_tables.csv', commutators,
                               cards, authorisations)
     
-    # Load config file
-    config = get_server_config()
-    
     # Generate commutator list
     if(args.commutator_name != 'all'):      
         comm_num = commutators.index(args.commutator_name)
@@ -134,7 +136,7 @@ def commutator_update(args):
             #print [cards, authorisations[index]]
             status = link.update_table([cards, authorisations[index]])
             
-    # Generate commutator list
+    # Display result
     if(args.commutator_name == 'all'):      
       logging.info('The access tables of all %0.0f commutators were updated.' % len(commutators))
     else:
@@ -149,8 +151,31 @@ def commutator_off(args):
 def commutator_auto(args):
     send_commutator_command(args.commutator_name, 'auto')
 
-def commutator_get_log(args):
-    logging.info('Commutator %s logs were retrieved.' % args.commutator_name)
+def commutator_get_log(args):    
+    # Generate commutator list
+    if(args.commutator_name != 'all'):      
+        comm_num = commutators.index(args.commutator_name)
+        commutators = [commutators[comm_num]]
+        authorisations = [authorisations[comm_num]]
+      
+    # Update commutators
+    for index, commutator in enumerate(commutators):
+        if config.has_section(commutator):
+            # Load radio parameters from config file
+            channel = config.getint(commutator, 'channel')
+            commutator_id = config.getint(commutator, 'id')
+            # Create a link for this commutator
+            print('Creating a link to %s (id = %d) on channel %d.' % (commutator, commutator_id, channel))
+            link = LinkCommand(radio, channel,
+                               commutator_id, commutator)
+            #print [cards, authorisations[index]]
+            status = link.update_table([cards, authorisations[index]])
+            
+    # Display result
+    if(args.commutator_name == 'all'):      
+      logging.info('The logged events of all %0.0f commutators were retrieved.' % len(commutators))
+    else:
+      logging.info('The logged events of commutator %s were retrieved.' % args.commutator_name)
 
 def commutator_new_log(args):
     """
@@ -194,15 +219,7 @@ def get_commutator_log_filename():
         open(log_file, 'a').close()
     return log_file
 
-def get_server_config():    
-    config_filename = 'piaccessserver.ini'
-    config = ConfigParser.RawConfigParser()    
-    config.read(config_filename)
-    return config
-
 def get_commutators():
-    config = get_server_config()
-    
     # Check if a table is available
     csv_filename = glob('access_tables.csv')
     if len(csv_filename) == 0:
@@ -221,9 +238,6 @@ def get_commutators():
     return commutators
 
 def send_commutator_command(commutator_name, command_name):    
-    # Load config file
-    config = get_server_config()
-    
     if(commutator_name == 'all'):      
       # Get commutator names from server
       commutators = get_commutators()
