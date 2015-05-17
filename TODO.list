@@ -1,5 +1,4 @@
 Todo list for doorlock
-- Add wiegand to nano code
 - Manufacture PCBs
 - Add double activation mode command
 - Add check status command (instead of auto)
