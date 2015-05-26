@@ -151,6 +151,18 @@ def commutator_off(args):
 def commutator_auto(args):
     send_commutator_command(args.commutator_name, 'auto')
 
+def commutator_clear_memory(args):
+    send_commutator_command(args.commutator_name, 'clear_memory')
+
+def commutator_single_activation(args):
+    send_commutator_command(args.commutator_name, 'single_activation')
+
+def commutator_double_activation(args):
+    send_commutator_command(args.commutator_name, 'double_activation')
+    
+def commutator_check_memory(args):
+    send_commutator_command(args.commutator_name, 'check_memory')
+
 def commutator_get_log(args):    
     # Generate commutator list
     if(args.commutator_name != 'all'):      
@@ -283,8 +295,36 @@ def send_commutator_command(commutator_name, command_name):
                     logging.info('Commutator %s set to always off mode.' % commutator)
                 else:
                     print('Commutator %s did not answer as expected (%s)' % (commutator, status))
-            obs = radio.read_register(NRF24.OBSERVE_TX)
-            radio.print_observe_tx(obs)
+            elif command_name == 'clear_memory':
+                status = link.clear_memory()
+                if status["commutator_ok"]:
+                    print('Commutator %s memory was cleared.' % commutator)
+                    logging.info('Commutator %s memory was cleared.' % commutator)
+                else:
+                    print('Commutator %s did not answer as expected (%s)' % (commutator, status))
+            elif command_name == 'single_activation':
+                status = link.single_activation()
+                if status["commutator_ok"]:
+                    print('Commutator %s set to single activation mode.' % commutator)
+                    logging.info('Commutator %s set to single activation mode.' % commutator)
+                else:
+                    print('Commutator %s did not answer as expected (%s)' % (commutator, status))
+            elif command_name == 'double_activation':
+                status = link.double_activation()
+                if status["commutator_ok"]:
+                    print('Commutator %s set to double activation mode.' % commutator)
+                    logging.info('Commutator %s set to double activation mode.' % commutator)
+                else:
+                    print('Commutator %s did not answer as expected (%s)' % (commutator, status))
+            elif command_name == 'check_memory':
+                status = link.check_memory()
+                if status["commutator_ok"]:
+                    print("Memory state on %s: %d/%d used." % (commutator, status["mem_used"], status["mem_size"]))
+                    # -> Logging entry set by function call
+                else:
+                    print('Commutator %s did not answer as expected (%s)' % (commutator, status))
+            #obs = radio.read_register(NRF24.OBSERVE_TX)
+            #radio.print_observe_tx(obs)
 
 
     
@@ -320,6 +360,22 @@ if __name__ == '__main__':
     parser_sdr = subparsers.add_parser('commutator_auto', description='Sets commutator activation to automatic (using card reader and access tables).')
     parser_sdr.add_argument('-n', '--commutator_name', default='all', help=commutator_name_help)
     parser_sdr.set_defaults(func=commutator_auto)
+        
+    parser_sdr = subparsers.add_parser('commutator_check_memory', description='Checks commutator memory.')
+    parser_sdr.add_argument('-n', '--commutator_name', default='all', help=commutator_name_help)
+    parser_sdr.set_defaults(func=commutator_check_memory)
+        
+    parser_sdr = subparsers.add_parser('commutator_clear_memory', description='Clears commutator memory.')
+    parser_sdr.add_argument('-n', '--commutator_name', default='all', help=commutator_name_help)
+    parser_sdr.set_defaults(func=commutator_clear_memory)
+        
+    parser_sdr = subparsers.add_parser('commutator_single_activation', description='Sets commutator single activation mode.')
+    parser_sdr.add_argument('-n', '--commutator_name', default='all', help=commutator_name_help)
+    parser_sdr.set_defaults(func=commutator_single_activation)
+        
+    parser_sdr = subparsers.add_parser('commutator_double_activation', description='Sets commutator double activation mode.')
+    parser_sdr.add_argument('-n', '--commutator_name', default='all', help=commutator_name_help)
+    parser_sdr.set_defaults(func=commutator_double_activation)
         
     parser_sdr = subparsers.add_parser('commutator_get_log', description='Gets commutator events log.')
     parser_sdr.add_argument('-n', '--commutator_name', default='all', help=commutator_name_help)

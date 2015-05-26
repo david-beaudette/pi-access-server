@@ -303,8 +303,8 @@ class LinkCommand():
             return outarg
         
         # Read memory state
-        outarg["mem_size"] = read_buf[1] + read_buf[2] * 0x100
-        outarg["mem_used"] = read_buf[3] + read_buf[4] * 0x100
+        outarg["mem_size"] = read_buf[2] + read_buf[1] * 0x100
+        outarg["mem_used"] = read_buf[4] + read_buf[3] * 0x100
         
         logging.info("Memory state on %s: %d/%d used.",
                      self.commutator_name, outarg["mem_used"],
