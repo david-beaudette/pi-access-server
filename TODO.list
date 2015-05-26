@@ -1,32 +1,30 @@
-Todo list for doorlock
+Todo list for commutator
+- Update communication protocol
+  + Do not erase events until reception is confirmed
 - Manufacture PCBs
 - Add double activation mode command
-- Add check status command (instead of auto)
+- Blink led using timer interrupts
 - Document construction steps in Wiki
-
+- Add support for doorlock configuration (besides commutator hard-coded channel number)
+  + Doorlock shall activate for a few seconds, not stay on
+  
 Todo for access servers
 - Build and validate:
-  + commutator status check (commutator_check [name])
-    o Poke commutator and return status
   + commutator table update (commutator_update [name])
-    o Read csv file
-    o Send update command to all commutators
-  + commutator enabling, disabling and automatic mode setting (commutator_on [name], commutator_off [name], commutator_auto [name])
-    o Send enable/disable/auto command to commutator
   + commutator logging dump to file (commutator_get_log [name])
-    o Get logged events from all commutators
     o Write events to file (1 file per commutator)
   + commutator_mem_check
   + commutator_mem_clear
 - Set up crontab on RPi
   + Decide frequency for each operation
-- Robustify radio link by checking the channel and retrying when message is not received as expected
+- Update communication protocol
+  + Robustify radio link by checking the channel and retrying when message is not received as expected
 - Document features and usage in Wiki
 - Document construction steps in Wiki
 
 Todo for management:
 - Create management database for access servers, hostnames, passwords, commutators
-  + Draft on personnal Dropbox
+  + Draft on personal Dropbox
 - Make admin tools for operations
   + Configure software and event logs download using SCP
     o WinSCP under Windows
