@@ -1,19 +1,13 @@
 Todo list for commutator
-- Update communication protocol
-  + Do not erase events until reception is confirmed
 - Manufacture PCBs
-- Validate double activation mode command
 - Document construction steps in Wiki
 - Add support for doorlock configuration (besides commutator hard-coded channel number)
   + Doorlock shall activate for a few seconds, not stay on
   
 Todo for access servers
-- Build and validate:
-  + commutator logging dump to file (commutator_get_log [name])
-    o Write events to file (1 file per commutator)
+- Replace user tag and event number by user name and event description in events*.csv
 - Set up crontab on RPi
   + Decide frequency for each operation
-- Robustify radio link by checking the channel and retrying when message is not received as expected
 - Document features and usage in Wiki
 - Build enclosure
 - Document construction steps in Wiki

@@ -158,7 +158,7 @@ class LinkCommand():
                 # Immediately convert elapsed time in seconds
                 # to UTC date and time for logging
                 unsigned_long_time = read_buf[7] + 256 * (read_buf[8] + 256 * (read_buf[9] + 256 * read_buf[10]))
-                outarg["log_times"].append(datetime.utcnow() - \
+                outarg["log_times"].append(datetime.now() - \
                                        timedelta(seconds=unsigned_long_time))
                 logging.info("Machine: %s; Time: %s; Event code %s; User %s",
                              self.commutator_name,
@@ -454,10 +454,11 @@ class DummyRadio():
                 for user_byte in self.log_user[0]:
                     self.rx_buf.append(user_byte)
                 # Current entry code time(4 bytes)
-                self.rx_buf.append(self.log_age[0])
-                self.rx_buf.append(0)
-                self.rx_buf.append(0)
-                self.rx_buf.append(0)
+                age_bytes = struct.unpack("4B", struct.pack("I", self.log_age[0]))
+                self.rx_buf.append(age_bytes[0])
+                self.rx_buf.append(age_bytes[1])
+                self.rx_buf.append(age_bytes[2])
+                self.rx_buf.append(age_bytes[3])
                 
                 # Remove entry from log
                 del self.log_code[0]
@@ -548,6 +549,7 @@ class DummyRadio():
     
 # UNIT TEST (if script is executed directly)
 if __name__ == '__main__':
+    import struct
     logging.basicConfig(filename='test_link_command.log',
                         format='%(asctime)s:%(levelname)s:%(funcName)s:%(message)s',
                         level=logging.DEBUG)

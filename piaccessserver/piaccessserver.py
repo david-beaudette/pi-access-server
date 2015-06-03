@@ -14,6 +14,7 @@ from glob import glob
 import shutil
 import os
 import socket
+import csv
 
 # Import project modules
 import db_connect
@@ -165,10 +166,11 @@ def commutator_check_memory(args):
 
 def commutator_get_log(args):    
     # Generate commutator list
-    if(args.commutator_name != 'all'):      
-        comm_num = commutators.index(args.commutator_name)
-        commutators = [commutators[comm_num]]
-        authorisations = [authorisations[comm_num]]
+    if(args.commutator_name == 'all'):      
+      # Get commutator names from server
+      commutators = get_commutators()
+    else:
+      commutators = [args.commutator_name]
       
     # Update commutators
     for index, commutator in enumerate(commutators):
@@ -179,9 +181,22 @@ def commutator_get_log(args):
             # Create a link for this commutator
             print('Creating a link to %s (id = %d) on channel %d.' % (commutator, commutator_id, channel))
             link = LinkCommand(radio, channel,
-                               commutator_id, commutator)
-            #print [cards, authorisations[index]]
-            status = link.update_table([cards, authorisations[index]])
+                               commutator_id, commutator)            
+            status = link.dump_logging()
+            
+            # Write events to log file
+            filename = get_commutator_log_filename(commutator)
+            with open(filename, 'ab') as csvfile:
+                log_file = csv.writer(csvfile, delimiter=';',
+                                        quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                for event_num in range(status['log_count']):
+                    log_file.writerow((status['log_times'][event_num].strftime("%Y-%m-%d %H:%M:%S"),
+                                      hex(status["log_codes"][event_num]),
+                                      hex(0x01000000 * status["log_users"][event_num][0] + 
+                                      0x00010000 * status["log_users"][event_num][1] + 
+                                      0x00000100 * status["log_users"][event_num][2] + 
+                                      status["log_users"][event_num][3])))
+            
             
     # Display result
     if(args.commutator_name == 'all'):      
@@ -204,14 +219,14 @@ def commutator_new_log(args):
       
     archive_folder_name = 'archives'
     for commutator in commutators:
-      log_file = glob('events_' + commutator + '_*.log')
+      log_file = glob('events_' + commutator + '_*.csv')
       if len(log_file) > 0:
           if not os.path.exists(archive_folder_name):
               os.makedirs(archive_folder_name)
           shutil.move(log_file[0], archive_folder_name + os.path.sep + log_file[0])
           logging.info('Archived %s file in folder %s.' % (log_file[0], archive_folder_name))
       # Create another log file
-      log_file = 'events_' + commutator + '_' + strftime("%Y-%m-%d_%Hh%Mm%Ss") + '.log'
+      log_file = 'events_' + commutator + '_' + strftime("%Y-%m-%d_%Hh%Mm%Ss") + '.csv'
       open(log_file, 'a').close()
       logging.info('Created new commutator events log file %s.' % log_file)
      
@@ -223,13 +238,13 @@ def get_sw_log_filename():
         log_file.append('piaccessserver_' + strftime("%Y-%m-%d_%Hh%Mm%Ss") + '.log')
     return log_file
 
-def get_commutator_log_filename():
-    log_file = glob('events_' + commutator + '_*.log')
+def get_commutator_log_filename(commutator_name):
+    log_file = glob('events_' + commutator_name + '_*.csv')
     if len(log_file) == 0:
         # Create file with current time
-        log_file.append('events_' + commutator + '_' + strftime("%Y-%m-%d_%Hh%Mm%Ss") + '.log')
-        open(log_file, 'a').close()
-    return log_file
+        log_file.append('events_' + commutator_name + '_' + strftime("%Y-%m-%d_%Hh%Mm%Ss") + '.csv')
+        open(log_file[0], 'a').close()
+    return log_file[0]
 
 def get_commutators():
     # Check if a table is available
