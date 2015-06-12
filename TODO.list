@@ -1,4 +1,8 @@
 Todo list for commutator
+- Add EEPROM to prototype
+  + Connect and secure proto board
+  + Add new EEPROM library
+  + Add selection of EEPROM in firmware
 - Manufacture PCBs
 - Document construction steps in Wiki
 - Add support for doorlock configuration (besides commutator hard-coded channel number)
@@ -11,20 +15,6 @@ Todo for access servers
 - Document features and usage in Wiki
 - Build enclosure
 - Document construction steps in Wiki
-
-Todo for management:
-- Create management database for access servers, hostnames, passwords, commutators
-  + Draft on personal Dropbox
-- Make admin tools for operations
-  + Configure software and event logs download using SCP
-    o WinSCP under Windows
-    o ? under Linux
-  + Build a collection of Python/batch/bash scripts to perform remote tasks via SSH/SCP
-    o commutator status check, enabling and disabling, etc.
-    o Update the pi-access-server software from GitHub
-    o Any task available on the access server!
-  + Build a (PyQt4?) GUI to perform the same tasks
-- Document design and implementation on Wiki  
   
 
 
