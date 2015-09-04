@@ -260,8 +260,9 @@ def get_commutators():
     commutators = []
     for commutator in db_commutators:
       # Find section in config file
-      if config.has_section(commutator[1]):
-          commutators.append(commutator[1])
+      print commutator
+      if config.has_section(commutator):
+          commutators.append(commutator)
       
     return commutators
 
