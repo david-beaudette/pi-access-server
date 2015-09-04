@@ -254,10 +254,11 @@ def get_commutators():
         server_db_retrieve(args)
         
     # Load tables from file
-    commutators = []
-    csv_rw.member_access_read('access_tables.csv', commutators, [], [])
+    db_commutators = []
+    csv_rw.member_access_read('access_tables.csv', db_commutators, [], [])
 
-    for commutator in commutators:
+    commutators = []
+    for commutator in db_commutators:
       # Find section in config file
       if config.has_section(commutator[1]):
           commutators.append(commutator[1])
