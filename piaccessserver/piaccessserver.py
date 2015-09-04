@@ -190,12 +190,13 @@ def commutator_get_log(args):
                 log_file = csv.writer(csvfile, delimiter=';',
                                         quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 for event_num in range(status['log_count']):
+                    card_hex_code = hex(0x01000000 * status["log_users"][event_num][0] + 
+                                        0x00010000 * status["log_users"][event_num][1] + 
+                                        0x00000100 * status["log_users"][event_num][2] + 
+                                        status["log_users"][event_num][3])
                     log_file.writerow((status['log_times'][event_num].strftime("%Y-%m-%d %H:%M:%S"),
                                       hex(status["log_codes"][event_num]),
-                                      hex(0x01000000 * status["log_users"][event_num][0] + 
-                                      0x00010000 * status["log_users"][event_num][1] + 
-                                      0x00000100 * status["log_users"][event_num][2] + 
-                                      status["log_users"][event_num][3])))
+                                      card_hex_code))
             
             
     # Display result
