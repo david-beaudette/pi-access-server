@@ -215,11 +215,14 @@ class LinkCommand():
             for byte_num in range(0, len(table[0][i]), 2):
                 command.append(int(table[0][i][byte_num], 16) * 0x10 + 
                                int(table[0][i][byte_num+1], 16))
-            print command
-            if not self.radio.write(command):
-                logging.warning("Unable to write %s command to %s. Radio link is down.",
-                                 hex(command[0]), self.commutator_name)
-                return outarg
+            num_retries = 0
+            while not self.radio.write(command):
+                time.sleep(0.010)
+                num_retries = num_retries + 1
+                if num_retries > 10:
+                    logging.warning("Unable to write %s command to %s. Radio link is down.",
+                                     hex(command[0]), self.commutator_name)
+                    return outarg
             logging.debug("Command #%d sent.", i)
             # Wait for answer
             read_buf = []
