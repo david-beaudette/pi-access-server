@@ -125,6 +125,7 @@ def commutator_update(args):
         authorisations = [authorisations[comm_num]]
       
     # Update commutators
+    num_commutators = 0
     for index, commutator in enumerate(commutators):
         if config.has_section(commutator):
             # Load radio parameters from config file
@@ -136,10 +137,11 @@ def commutator_update(args):
                                commutator_id, commutator)
             #print [cards, authorisations[index]]
             status = link.update_table([cards, authorisations[index]])
+            num_commutators = num_commutators + 1
             
     # Display result
     if(args.commutator_name == 'all'):      
-      logging.info('The access tables of all %0.0f commutators were updated.' % len(commutators))
+      logging.info('The access tables of all %0.0f commutators were updated.' % num_commutators)
     else:
       logging.info('The access tables of commutator %s were updated.' % args.commutator_name)
       
