@@ -38,18 +38,18 @@ Raspberry Pi configuration to build an access server
   In Idle for Python 2.7 type: import RPi.GPIO
   Nothing should happen
 
-9. Install svn
-  sudo apt-get install subversion
-
 10. Pull the source code for the pi-access-server from Github.
-  svn export https://github.com/david-beaudette/pi-access-server/trunk/ ~/pi-access-server
+  cd
+  mkdir git
+  cd git
+  git clone https://github.com/david-beaudette/pi-access-server.git
 
 11. Install the radio library in Python path
-  sudo mv ~/pi-access-server/lib_nrf24/lib_nrf24.py /usr/lib/python2.7/dist-packages/
+  sudo cp ~/git/pi-access-server/lib_nrf24/lib_nrf24.py /usr/lib/python2.7/dist-packages/
 
 12. Copy the task scripts to home folder.
-  sudo mv ~/pi-access-server/piaccessserver/piaccessserver_tasks.sh /home/pi
-  sudo mv ~/pi-access-server/piaccessserver/new_logs.sh /home/pi
+  sudo cp ~/git/pi-access-server/piaccessserver/piaccessserver_tasks.sh /home/pi
+  sudo cp ~/git/pi-access-server/piaccessserver/new_logs.sh /home/pi
 
 13. Configure cron to launch server functions at regular intervals
   sudo crontab -e
@@ -85,8 +85,16 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 3 0 * * * /home/pi/new_logs.sh >/home/pi/cronlog.txt 2>&1
 
 14. Change the RPi hostname (hostnames are managed in a LibreOffice spreadsheet)
-  Follow steps described in http://www.howtogeek.com/167195/how-to-change-your-raspberry-pi-or-other-linux-devices-hostname/
-
+  (From http://www.howtogeek.com/167195/how-to-change-your-raspberry-pi-or-other-linux-devices-hostname/)
+  sudo nano /etc/hosts
+  Change raspberrypi for fabpiXXX (use proper name instead of XXX)
+  Save (Ctrl+o) and quit (Ctrl+x) nano editor
+  sudo nano /etc/hostname
+  Change raspberrypi for fabpiXXX (use proper name instead of XXX)
+  Save (Ctrl+o) and quit (Ctrl+x) nano editor
+  sudo /etc/init.d/hostname.sh
+  sudo reboot  
+  
 15. Install the avahi-daemon network tool (http://www.howtogeek.com/167190/how-and-why-to-assign-the-.local-domain-to-your-raspberry-pi/)
   sudo apt-get install avahi-daemon
   Y
