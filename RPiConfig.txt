@@ -27,8 +27,8 @@ Raspberry Pi configuration to build an access server
   cd python-spi
   wget https://raw.github.com/doceme/py-spidev/master/setup.py
   wget https://raw.github.com/doceme/py-spidev/master/spidev_module.c
-  wget https://raw.github.com/doceme/py-spidev/master/README.mb
-  wget https://raw.github.com/doceme/py-spidev/master/CHANGELOG.mb 
+  wget https://raw.github.com/doceme/py-spidev/master/README.md
+  wget https://raw.github.com/doceme/py-spidev/master/CHANGELOG.md 
   sudo python setup.py install
   
 7. Install the MySQL module for Python
