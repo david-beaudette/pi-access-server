@@ -7,6 +7,7 @@ Todo list for commutator
 - Document construction steps in Wiki
 - Add support for doorlock configuration (besides commutator hard-coded channel number)
   + Doorlock shall activate for a few seconds, not stay on
+- Add sound indication when passing card (William)
   
 Todo for access servers
 - Replace user tag and event number by user name and event description in events*.csv
