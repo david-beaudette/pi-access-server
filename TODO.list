@@ -11,6 +11,15 @@ Todo list for commutator
   
 Todo for access servers
 - Replace user tag and event number by user name and event description in events*.csv
+- Determine authorisation based on membership in CiviCRM
+SELECT `civicrm_contact`.`display_name`,
+       `civicrm_contact`.`id` 
+FROM `sherbro3_civicrm`.`civicrm_contact` 
+WHERE `civicrm_contact`.`id` IN 
+(SELECT `civicrm_membership`.`contact_id` 
+FROM `sherbro3_civicrm`.`civicrm_membership` WHERE `civicrm_membership`.`membership_type_id` BETWEEN 11 and 13 
+AND `civicrm_membership`.`end_date` >= CURDATE());
+
 - Set up crontab on RPi
   + Decide frequency for each operation
 - Document features and usage in Wiki
