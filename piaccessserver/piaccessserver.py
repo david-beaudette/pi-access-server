@@ -220,15 +220,19 @@ def commutator_get_log(args):
                                         0x00010000 * status["log_users"][event_num][1] + 
                                         0x00000100 * status["log_users"][event_num][2] + 
                                         status["log_users"][event_num][3])
+                    card_hex_code = card_hex_code[2:10].upper()
                     # Find card code in database card list
                     member_name = 'Unknown'
-                    for member_num in range(members_csv):
+                    for member_num in range(len(members_csv)):
                         if cards_csv[member_num] == card_hex_code:
                             member_name = members_csv[member_num]
+                            
+                    print(hex(status["log_codes"][event_num]))
+                    print(event_strings[hex(status["log_codes"][event_num])])
                     log_file.writerow((status['log_times'][event_num].strftime("%Y-%m-%d %H:%M:%S"),
                                       hex(status["log_codes"][event_num]),
-                                      card_hex_code), member_name,
-                                      event_strings[hex(status["log_codes"][event_num])])            
+                                      card_hex_code, member_name,
+                                      event_strings[hex(status["log_codes"][event_num])]))            
             
     # Display result
     if(args.commutator_name == 'all'):      
