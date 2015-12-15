@@ -169,6 +169,7 @@ def commutator_check_memory(args):
 
 def commutator_get_log(args):    
     # Define event names
+    event_strings = {'0x00':'Error'}
     event_strings['0x30'] = 'Un 1er membre autorisé a utilisé sa carte en mode double autorisation.'
     event_strings['0x31'] = 'Un membre autorisé a activé le commutateur.'
     event_strings['0x32'] = 'Un membre autorisé a désactivé le commutateur.'
