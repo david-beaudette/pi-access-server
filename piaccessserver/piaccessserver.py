@@ -227,7 +227,7 @@ def commutator_get_log(args):
                     log_file.writerow((status['log_times'][event_num].strftime("%Y-%m-%d %H:%M:%S"),
                                       hex(status["log_codes"][event_num]),
                                       card_hex_code), member_name,
-                                      event_strings[hex(status["log_codes"][event_num])d])            
+                                      event_strings[hex(status["log_codes"][event_num])])            
             
     # Display result
     if(args.commutator_name == 'all'):      
