@@ -114,9 +114,10 @@ def commutator_update(args):
     # Load tables from file
     commutators = []
     cards = []
+    members = []
     authorisations = []
     csv_rw.member_access_read('access_tables.csv', commutators,
-                              cards, authorisations)
+                              members, cards, authorisations)
     
     # Generate commutator list
     if(args.commutator_name != 'all'):      
@@ -167,6 +168,13 @@ def commutator_check_memory(args):
     send_commutator_command(args.commutator_name, 'check_memory')
 
 def commutator_get_log(args):    
+    # Define event names
+    event_strings['0x30'] = 'Un 1er membre autorisé a utilisé sa carte en mode double autorisation.'
+    event_strings['0x31'] = 'Un membre autorisé a activé le commutateur.'
+    event_strings['0x32'] = 'Un membre autorisé a désactivé le commutateur.'
+    event_strings['0x33'] = 'Un membre non autorisé a utilisé sa carte.'
+    event_strings['0x34'] = 'Une carte inconnue a été détectée.'
+    
     # Generate commutator list
     if(args.commutator_name == 'all'):      
       # Get commutator names from server
@@ -174,6 +182,20 @@ def commutator_get_log(args):
     else:
       commutators = [args.commutator_name]
       
+    # Check if a table is available
+    csv_filename = glob('access_tables.csv')
+    if len(csv_filename) == 0:
+        # Generate access table file
+        server_db_retrieve(args)
+        
+    # Load tables from file
+    commutators_csv = []
+    cards_csv = []
+    members_csv = []
+    authorisations_csv = []
+    csv_rw.member_access_read('access_tables.csv', commutators_csv,
+                              members_csv, cards_csv, authorisations_csv)
+                              
     # Update commutators
     for index, commutator in enumerate(commutators):
         if config.has_section(commutator):
@@ -192,14 +214,20 @@ def commutator_get_log(args):
                 log_file = csv.writer(csvfile, delimiter=';',
                                         quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 for event_num in range(status['log_count']):
+                    # Compute card code from individual bytes
                     card_hex_code = hex(0x01000000 * status["log_users"][event_num][0] + 
                                         0x00010000 * status["log_users"][event_num][1] + 
                                         0x00000100 * status["log_users"][event_num][2] + 
                                         status["log_users"][event_num][3])
+                    # Find card code in database card list
+                    member_name = 'Unknown'
+                    for member_num in range(members_csv):
+                        if cards_csv[member_num] == card_hex_code:
+                            member_name = members_csv[member_num]
                     log_file.writerow((status['log_times'][event_num].strftime("%Y-%m-%d %H:%M:%S"),
                                       hex(status["log_codes"][event_num]),
-                                      card_hex_code))
-            
+                                      card_hex_code), member_name,
+                                      event_strings[hex(status["log_codes"][event_num])d])            
             
     # Display result
     if(args.commutator_name == 'all'):      

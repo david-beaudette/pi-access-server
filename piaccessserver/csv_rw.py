@@ -50,6 +50,7 @@ def member_access_write(filename,
 
 def member_access_read(filename,
                        machines,
+                       members,
                        cards,
                        autorisations):
                                 
@@ -70,6 +71,7 @@ def member_access_read(filename,
             if len(member[3]) == 8 and \
                all(c in string.hexdigits for c in member[3]):
                 cards.append(member[3])
+                members.append(member[1])
                 # Check if the member has access to each machine 
                 for machine_num in range(len(machine_list)):
                     if int(member[4 + machine_num]):
@@ -123,14 +125,17 @@ if __name__ == '__main__':
     # Retrieve from same file
     machines_r = []
     cards_r = []
+    members_r = []
     autorisations_r = []
     member_access_read(csv_filename,
                        machines_r,
+                       members_r,
                        cards_r,
                        autorisations_r)
 
     # Inspect output
     print(machines_r)
+    print(members_r)
     print(cards_r)
     print(autorisations_r)
     

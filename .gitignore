@@ -53,3 +53,4 @@ docs/_build/
 # PyBuilder
 target/
 piaccessserver/db_connect_fields.ignored
+piaccessserver/test_csv_rw.csv
