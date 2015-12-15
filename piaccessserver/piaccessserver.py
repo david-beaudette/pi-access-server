@@ -286,7 +286,7 @@ def get_commutators():
         
     # Load tables from file
     db_commutators = []
-    csv_rw.member_access_read('access_tables.csv', db_commutators, [], [])
+    csv_rw.member_access_read('access_tables.csv', db_commutators, [], [], [])
 
     commutators = []
     for commutator in db_commutators:
