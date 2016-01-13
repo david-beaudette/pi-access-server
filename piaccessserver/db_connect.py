@@ -5,7 +5,7 @@ import csv
 import string
 import MySQLdb
 
-def read_db(commutators, members, cards, tags, config_filename):
+def read_db(commutators, members, memberships, cards, tags, config_filename):
     # Read parameter file
     config = ConfigParser.RawConfigParser()
     config.read(config_filename)
@@ -47,6 +47,16 @@ def read_db(commutators, members, cards, tags, config_filename):
                         (SELECT `civicrm_value_carte_d_acc_s_4`.`entity_id` 
                         FROM `sherbro3_civicrm`.`civicrm_value_carte_d_acc_s_4`);"""
 
+    # Find the contacts that have a valid membership
+    get_membership_req = """SELECT `civicrm_contact`.`display_name`,
+                               `civicrm_contact`.`id` 
+                            FROM `sherbro3_civicrm`.`civicrm_contact` 
+                            WHERE `civicrm_contact`.`id` IN 
+                            (SELECT `civicrm_membership`.`contact_id` 
+                            FROM `sherbro3_civicrm`.`civicrm_membership` 
+                            WHERE `civicrm_membership`.`membership_type_id` 
+                            BETWEEN 11 and 13 AND `civicrm_membership`.`end_date` >= CURDATE());"""
+
     # Find the tags associated with members with cards
     get_tag_req = """SELECT `civicrm_entity_tag`.`entity_id`,
                             `civicrm_entity_tag`.`tag_id`
@@ -72,6 +82,10 @@ def read_db(commutators, members, cards, tags, config_filename):
         member_req = cur.fetchall()
         #print(member_req)
         
+        cur.execute(get_membership_req)
+        membership_req = cur.fetchall()
+        #print(membership_req)
+        
         cur.execute(get_tag_req)
         tag_req = cur.fetchall()
         #print(tag_req)
@@ -81,6 +95,7 @@ def read_db(commutators, members, cards, tags, config_filename):
         commutators.extend(commutator_req)
         cards.extend(card_req)
         members.extend(member_req)
+        memberships.extend(membership_req)
         tags.extend(tag_req)
         return True
         
@@ -98,16 +113,18 @@ def read_db(commutators, members, cards, tags, config_filename):
 if __name__ == '__main__':
     commutators = []
     members = []
+    memberships = []
     cards = []
     tags = []
     
     # Test db data retrieval
     config_filename = 'db_connect_fields.ignored'
-    read_db(commutators, members, cards, tags, config_filename)
+    read_db(commutators, members, memberships, cards, tags, config_filename)
 
     # Inspect outputs
     print(commutators) 
     print(members) 
+    print(memberships) 
     print(cards) 
     print(tags) 
 

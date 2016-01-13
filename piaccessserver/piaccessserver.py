@@ -63,17 +63,19 @@ def server_db_retrieve(args = []):
     logging.info('Retrieving tables from database.')
     commutators = []
     members = []
+    memberships = []
     cards = []
     tags = []
     
     # Test db data retrieval
     db_config_file = config.get('DATABASE', 'db_config_file')
-    db_connect.read_db(commutators, members, cards, tags, db_config_file)
+    db_connect.read_db(commutators, members, memberships, cards, tags, db_config_file)
     csv_filename = 'access_tables.csv'
     logging.info('Writing access tables to file.')
     csv_rw.member_access_write(csv_filename,
                                commutators,
                                members,
+                               memberships,
                                cards,
                                tags)
     logging.info('Access tables were written to %s.' % csv_filename)
@@ -115,9 +117,24 @@ def commutator_update(args):
     commutators = []
     cards = []
     members = []
+    memberships = []
     authorisations = []
     csv_rw.member_access_read('access_tables.csv', commutators,
-                              members, cards, authorisations)
+                              members, memberships, cards, authorisations)
+    
+    # Consider access tags or not
+    if config.getboolean('ACCESS_SERVER', 'manage_tags'):
+        # Set all authorisations to valid, whatever tag was assigned to the member
+        for i in range(len(authorisations)):
+            for j in range(len(authorisations[i])):
+                authorisations[i][j] = True
+                
+    # Manage membership validity                
+    if config.getboolean('ACCESS_SERVER', 'manage_membership'):
+        # Valid authorisations depend on membership validity
+        for i in range(len(authorisations)):
+            for j in range(len(authorisations[i])):
+                authorisations[i][j] = authorisations[i][j] and memberships[j]    
     
     # Generate commutator list
     if(args.commutator_name != 'all'):      
@@ -193,9 +210,10 @@ def commutator_get_log(args):
     commutators_csv = []
     cards_csv = []
     members_csv = []
+    memberships_csv = []
     authorisations_csv = []
     csv_rw.member_access_read('access_tables.csv', commutators_csv,
-                              members_csv, cards_csv, authorisations_csv)
+                              members_csv, memberships_csv, cards_csv, authorisations_csv)
                               
     # Update commutators
     for index, commutator in enumerate(commutators):
@@ -291,7 +309,7 @@ def get_commutators():
         
     # Load tables from file
     db_commutators = []
-    csv_rw.member_access_read('access_tables.csv', db_commutators, [], [], [])
+    csv_rw.member_access_read('access_tables.csv', db_commutators, [], [], [], [])
 
     commutators = []
     for commutator in db_commutators:
