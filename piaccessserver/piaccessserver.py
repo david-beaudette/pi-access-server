@@ -123,7 +123,7 @@ def commutator_update(args):
                               members, memberships, cards, authorisations)
     
     # Consider access tags or not
-    if config.getboolean('ACCESS_SERVER', 'manage_tags'):
+    if not config.getboolean('ACCESS_SERVER', 'manage_tags'):
         # Set all authorisations to valid, whatever tag was assigned to the member
         for i in range(len(authorisations)):
             for j in range(len(authorisations[i])):
@@ -135,7 +135,8 @@ def commutator_update(args):
         for i in range(len(authorisations)):
             for j in range(len(authorisations[i])):
                 authorisations[i][j] = authorisations[i][j] and memberships[j]    
-    
+                #logging.debug('User %s (membership = %d), commutator %s, tag validity = %d.' % (members[j], memberships[j], commutators[i], authorisations[i][j]))
+                
     # Generate commutator list
     if(args.commutator_name != 'all'):      
         comm_num = commutators.index(args.commutator_name)
@@ -150,7 +151,7 @@ def commutator_update(args):
             channel = config.getint(commutator, 'channel')
             commutator_id = config.getint(commutator, 'id')
             # Create a link for this commutator
-            print('Creating a link to %s (id = %d) on channel %d.' % (commutator, commutator_id, channel))
+            #print('Creating a link to %s (id = %d) on channel %d.' % (commutator, commutator_id, channel))
             link = LinkCommand(radio, channel,
                                commutator_id, commutator)
             #print [cards, authorisations[index]]
@@ -222,7 +223,7 @@ def commutator_get_log(args):
             channel = config.getint(commutator, 'channel')
             commutator_id = config.getint(commutator, 'id')
             # Create a link for this commutator
-            print('Creating a link to %s (id = %d) on channel %d.' % (commutator, commutator_id, channel))
+            #print('Creating a link to %s (id = %d) on channel %d.' % (commutator, commutator_id, channel))
             link = LinkCommand(radio, channel,
                                commutator_id, commutator)            
             status = link.dump_logging()
@@ -334,7 +335,7 @@ def send_commutator_command(commutator_name, command_name):
             channel = config.getint(commutator, 'channel')
             commutator_id = config.getint(commutator, 'id')
             # Create a link for this commutator
-            print('Creating a link to %s (id = %d) on channel %d.' % (commutator, commutator_id, channel))
+            #print('Creating a link to %s (id = %d) on channel %d.' % (commutator, commutator_id, channel))
             link = LinkCommand(radio, channel,
                                commutator_id, commutator)
             status = {"commutator_ok": True}
