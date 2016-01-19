@@ -236,7 +236,7 @@ class LinkCommand():
             
             # Read received buffer
             self.radio.read(read_buf, 3)
-            print read_buf
+            
             if not len(read_buf) == 3:
                 outarg["recv_ok"] = False
                 logging.warning("Machine %s reply data length (%d) is abnormal.",
