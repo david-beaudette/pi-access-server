@@ -93,6 +93,7 @@ def server_new_log(args):
         print('Archiving %s file in folder %s.' % (log_file[0], archive_folder_name))
         if not os.path.exists(archive_folder_name):
             os.makedirs(archive_folder_name)
+            os.chmod(archive_folder_name, 0o777)
         shutil.move(log_file[0], archive_folder_name + os.path.sep + log_file[0])
     # Create another log file
     log_file = get_sw_log_filename()
@@ -100,6 +101,7 @@ def server_new_log(args):
     logging.basicConfig(filename=log_file[0],
                         format='%(asctime)s:%(levelname)s:%(funcName)s:%(message)s',
                         level=logging.DEBUG)
+    os.chmod(log_file[0], 0o777)
     logging.info('Software events log file creation.')
     
 def commutator_check(args):
@@ -252,7 +254,7 @@ def commutator_get_log(args):
                                       hex(status["log_codes"][event_num]),
                                       card_hex_code, member_name,
                                       event_strings[hex(status["log_codes"][event_num])]))            
-            
+            os.chmod(filename, 0o777)
     # Display result
     if(args.commutator_name == 'all'):      
       logging.info('The logged events of all %0.0f commutators were retrieved.' % len(commutators))
@@ -278,11 +280,13 @@ def commutator_new_log(args):
       if len(log_file) > 0:
           if not os.path.exists(archive_folder_name):
               os.makedirs(archive_folder_name)
+              os.chmod(archive_folder_name, 0o777)
           shutil.move(log_file[0], archive_folder_name + os.path.sep + log_file[0])
           logging.info('Archived %s file in folder %s.' % (log_file[0], archive_folder_name))
       # Create another log file
       log_file = 'events_' + commutator + '_' + strftime("%Y-%m-%d_%Hh%Mm%Ss") + '.csv'
       open(log_file, 'a').close()
+      os.chmod(log_file, 0o777)
       logging.info('Created new commutator events log file %s.' % log_file)
      
 # Support functions
@@ -299,6 +303,7 @@ def get_commutator_log_filename(commutator_name):
         # Create file with current time
         log_file.append('events_' + commutator_name + '_' + strftime("%Y-%m-%d_%Hh%Mm%Ss") + '.csv')
         open(log_file[0], 'a').close()
+        os.chmod(log_file[0], 0o777)
     return log_file[0]
 
 def get_commutators():
@@ -462,11 +467,11 @@ if __name__ == '__main__':
     # Set software event logging
     args_vars = vars(args)
     if(args_vars['func'].__name__ != 'server_new_log'):
-      log_file = get_sw_log_filename()
-      logging.basicConfig(filename=log_file[0],
-                          format='%(asctime)s:%(levelname)s:%(funcName)s:%(message)s',
-                          level=logging.DEBUG)
-    
+        log_file = get_sw_log_filename()
+        logging.basicConfig(filename=log_file[0],
+                            format='%(asctime)s:%(levelname)s:%(funcName)s:%(message)s',
+                            level=logging.DEBUG)
+        os.chmod(log_file[0], 0o777)
     # Execute required function 
     args.func(args)
 
