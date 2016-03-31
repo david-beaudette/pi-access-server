@@ -55,7 +55,7 @@ def read_db(commutators, members, memberships, cards, tags, config_filename):
                             (SELECT `civicrm_membership`.`contact_id` 
                             FROM `sherbro3_civicrm`.`civicrm_membership` 
                             WHERE `civicrm_membership`.`membership_type_id` 
-                            BETWEEN 11 and 13 AND `civicrm_membership`.`end_date` >= CURDATE());"""
+                            IN (11,12,13,16,17,18,19,20,21,22,23) AND `civicrm_membership`.`end_date` >= CURDATE());"""
 
     # Find the tags associated with members with cards
     get_tag_req = """SELECT `civicrm_entity_tag`.`entity_id`,
