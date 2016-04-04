@@ -136,7 +136,7 @@ def commutator_update(args):
         # Valid authorisations depend on membership validity
         for i in range(len(authorisations)):
             for j in range(len(authorisations[i])):
-                authorisations[i][j] = authorisations[i][j] and memberships[j]    
+                authorisations[i][j] = authorisations[i][j] and (memberships[j] > 0) 
                 #logging.debug('User %s (membership = %d), commutator %s, tag validity = %d.' % (members[j], memberships[j], commutators[i], authorisations[i][j]))
                 
     # Generate commutator list
@@ -244,15 +244,17 @@ def commutator_get_log(args):
                     card_hex_code = card_hex_code[2:10].upper()
                     # Find card code in database card list
                     member_name = 'Unknown'
+                    membership_type = 0
                     for member_num in range(len(members_csv)):
                         if cards_csv[member_num] == card_hex_code:
                             member_name = members_csv[member_num]
-                            
+                            membership_type = memberships_csv[member_num]
+                                                     
                     print(hex(status["log_codes"][event_num]))
                     print(event_strings[hex(status["log_codes"][event_num])])
                     log_file.writerow((status['log_times'][event_num].strftime("%Y-%m-%d %H:%M:%S"),
                                       hex(status["log_codes"][event_num]),
-                                      card_hex_code, member_name,
+                                      card_hex_code, member_name, membership_type, 
                                       event_strings[hex(status["log_codes"][event_num])]))            
             os.chmod(filename, 0o777)
     # Display result

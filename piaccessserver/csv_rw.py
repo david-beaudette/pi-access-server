@@ -32,14 +32,11 @@ def member_access_write(filename,
                     csv_member.append(card[1])
                     csv_member.append(card[2])
             # Membership validity     
-            b_membership_valid = False
+            membership_type = 0;
             for membership in membership_req:
                 if membership[1] == member[1]:
-                    b_membership_valid = True
-            if b_membership_valid:
-                csv_member.append('1')
-            else:
-                csv_member.append('0')
+                    membership_type = membership[2]
+            csv_member.append(membership_type)
             # Access to each machine
             member_machines = []
             for tag in tag_req:
@@ -86,12 +83,8 @@ def member_access_read(filename,
                all(c in string.hexdigits for c in member[3]):
                 cards.append(member[3])
                 members.append(member[1])
-                if int(member[4]):
-                    # Access granted
-                    memberships.append(True)
-                else:
-                    # Access refused
-                    memberships.append(False)
+                # Add membership status
+                memberships.append(member[4])
                 # Check if the member has access to each machine 
                 for machine_num in range(len(machine_list)):
                     if int(member[5 + machine_num]):
@@ -124,10 +117,10 @@ if __name__ == '__main__':
                 ('David Beaudette', 3L),
                 ('David Moreau Bastien', 4L),
                 ('Gabriel Rebêlo', 5L))
-    memberships = (('Francis Poisson-Gagnon', 2L),
-                ('David Beaudette', 3L),
-                ('Nobody Gauthier', 22L),
-                ('Ibrahim Ferrer', 678L))
+    memberships = (('Francis Poisson-Gagnon', 2L, 21L),
+                ('David Beaudette', 3L, 0L),
+                ('Nobody Gauthier', 22L, 23L),
+                ('Ibrahim Ferrer', 678L, 13L))
     cards = ((3L, 'F1', '7040840B'),
              (4L, 'F2', '5084F754'),
              (2L, 'F3', '03871AC1'),

@@ -49,13 +49,14 @@ def read_db(commutators, members, memberships, cards, tags, config_filename):
 
     # Find the contacts that have a valid membership
     get_membership_req = """SELECT `civicrm_contact`.`display_name`,
-                               `civicrm_contact`.`id` 
-                            FROM `sherbro3_civicrm`.`civicrm_contact` 
-                            WHERE `civicrm_contact`.`id` IN 
-                            (SELECT `civicrm_membership`.`contact_id` 
-                            FROM `sherbro3_civicrm`.`civicrm_membership` 
-                            WHERE `civicrm_membership`.`membership_type_id` 
-                            IN (11,12,13,16,17,18,19,20,21,22,23) AND `civicrm_membership`.`end_date` >= CURDATE());"""
+                                   `civicrm_contact`.`id`,
+                                   `civicrm_membership`.`membership_type_id`,
+                                   `civicrm_membership`.`membership_type_id`
+                            FROM `sherbro3_civicrm`.`civicrm_contact`, `sherbro3_civicrm`.`civicrm_membership` 
+                            WHERE `civicrm_contact`.`id` = `civicrm_membership`.`contact_id`
+                            AND (`civicrm_membership`.`membership_type_id` 
+                            IN (11,12,13,16,17,18,19,20,21,22,23) 
+                            AND `civicrm_membership`.`end_date` >= CURDATE());"""
 
     # Find the tags associated with members with cards
     get_tag_req = """SELECT `civicrm_entity_tag`.`entity_id`,
