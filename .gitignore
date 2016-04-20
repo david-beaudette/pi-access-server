@@ -55,3 +55,5 @@ target/
 piaccessserver/db_connect_fields.ignored
 piaccessserver/test_csv_rw.csv
 piaccessserver/archives
+piaccessserver/event_list.csv
+piaccessserver/access_tables.csv
