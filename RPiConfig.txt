@@ -6,6 +6,8 @@ Raspberry Pi configuration to build an access server
   
 2. Install the Python dev package
   sudo apt-get install python-dev
+  sudo apt-get install python-pip
+  sudo pip install --upgrade google-api-python-client
   
 3. Enable SPI on the system
   sudo nano /etc/modprobe.d/raspi-blacklist.conf
