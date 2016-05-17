@@ -1,30 +1,13 @@
 Todo list for commutator
-- Add EEPROM to prototype
-  + Connect and secure proto board
-  + Add new EEPROM library
-  + Add selection of EEPROM in firmware
+- Update PCB design with EEPROM
 - Manufacture PCBs
 - Document construction steps in Wiki
-- Add support for doorlock configuration (besides commutator hard-coded channel number)
-  + Doorlock shall activate for a few seconds, not stay on
-- Add sound indication when passing card (William)
   
-Todo for access servers
-- Replace user tag and event number by user name and event description in events*.csv
-- Determine authorisation based on membership in CiviCRM
-SELECT `civicrm_contact`.`display_name`,
-       `civicrm_contact`.`id` 
-FROM `sherbro3_civicrm`.`civicrm_contact` 
-WHERE `civicrm_contact`.`id` IN 
-(SELECT `civicrm_membership`.`contact_id` 
-FROM `sherbro3_civicrm`.`civicrm_membership` WHERE `civicrm_membership`.`membership_type_id` BETWEEN 11 and 13 
-AND `civicrm_membership`.`end_date` >= CURDATE());
-
-- Set up crontab on RPi
-  + Decide frequency for each operation
+Todo list for access servers
 - Document features and usage in Wiki
 - Build enclosure
 - Document construction steps in Wiki
+- Add log analysis and GDrive update step in new_logs.sh
   
 
 

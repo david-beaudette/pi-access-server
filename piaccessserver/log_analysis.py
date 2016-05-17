@@ -109,7 +109,7 @@ def get_first_confirmed_cards(events_filename):
         for event in eventreader:
         
             # Get timestamp, event type and member
-            if event[1] == '0x31' and not card_in_list(event[2]):
+            if (event[1] == '0x31' or event[1] == '0x33') and not card_in_list(event[2]):
             # If event type is "Confirmed" and member is not already included in list
                 #print("%s with card %s." % (event[3], event[2]))
                 
