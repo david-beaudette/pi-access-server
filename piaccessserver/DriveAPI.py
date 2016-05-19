@@ -12,15 +12,18 @@ from __future__ import print_function
 import os
 import sys
 import argparse
+import string
 from apiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 
 #parse the arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("-m", "--mode", choices=["U", "D", "O"], help="Mode of the script either U for upload, D for download or O for update(overwrite).")
+parser.add_argument("-m", "--mode", choices=["U", "D", "O", "S"], help="Mode of the script either U for upload, D for download, O for update(overwrite) and S for search.")
 parser.add_argument("-f", "--file", nargs='+', help="File name to upload or path to download")	
 parser.add_argument("-i", "--id", nargs='+', help="Id of file to download or update.")
+parser.add_argument("-d", "--directory", help="Folder to put the files in")
+parser.add_argument("-s", "--search", help="Search string for search mode")
 args = parser.parse_args()
 
 #function to associate the id with the file
@@ -42,10 +45,10 @@ def fileerr(local):
 	
 #define upload, download and overwrite functions.
 
-def upload(files):
+def upload(files, folder):
 	for file in files:
 		if os.path.isfile(file):
-			metadata = {'name': os.path.split(file)[1]}
+			metadata = {'parents': folder, 'name': os.path.split(file)[1]}
 			
 			res = DRIVE.files().create(body=metadata, media_body=file).execute()
 			
@@ -84,6 +87,20 @@ def overwrite(ids, files):
 	else:
 		print("usage: %s [-h] [-i ID] {U,D,O} file" % (os.path.basename(__file__)))
 		print("%s: error: the following arguments are required: ID" % (os.path.basename(__file__)))
+
+		
+def search(sstring):
+	result = []
+page_token = None
+param = {}
+if page_token:
+	param['pageToken'] = page_token
+	files = DRIVE.files().list(**param).execute()
+	#add the files in the list
+	result.extend(files['items'])
+	page_token = files.get('nextPageToken')
+	print(result)
+
 		
 		
 #connect and authenticate to google drive
@@ -97,20 +114,16 @@ if not creds or creds.invalid:
 			
 DRIVE = build('drive', 'v3', http=creds.authorize(Http()))
 
-if args.file:
 
 	#choose mode and call function
-	if args.mode == "U":
-		upload(args.file)
-	elif args.mode == "D":
-		download(args.id, args.file)
-	elif args.mode == "O":
-		overwrite(args.id, args.file)
-	else:
-		print("usage: %s [-h] [-i ID] {U,D,O} file" % (os.path.basename(__file__)))
-		print("%s: error: the following arguments are required: Mode (Choose between {U or D or O}" % (os.path.basename(__file__)))
+if args.mode == "U":
+	upload(args.file, args.directory)
+elif args.mode == "D":
+	download(args.id, args.file)
+elif args.mode == "O":
+	overwrite(args.id, args.file)
+elif args.mode == "S":
+	search(args.search)
 else:
 	print("usage: %s [-h] [-i ID] {U,D,O} file" % (os.path.basename(__file__)))
-	print("%s: error: the following arguments are required: File" % (os.path.basename(__file__)))
-	
-
+	print("%s: error: the following arguments are required: Mode (Choose between {U or D or O}" % (os.path.basename(__file__)))
