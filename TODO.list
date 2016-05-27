@@ -2,13 +2,16 @@ Todo list for commutator
 - Update PCB design with EEPROM
 - Manufacture PCBs
 - Document construction steps in Wiki
+- Modify protocol to work on a single radio channel but using different "addresses" for each commutator
+- Add encryption
+- Add version printing at commutator startup
   
 Todo list for access servers
 - Document features and usage in Wiki
-- Build enclosure
+- Build enclosure (3D printer)
 - Document construction steps in Wiki
 - Add log analysis and GDrive update step in new_logs.sh
-  
+- Fix the database update issue
 
 
 
