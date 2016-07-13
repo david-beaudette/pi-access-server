@@ -266,7 +266,7 @@ class LinkCommand():
                 pass
             elif read_buf[2] == 0xD2:
                 # Authorisation was modified for this card
-                logging.debug("Card #%d modified (%s%s%s%s), now auth = %d.", i, hex(table[0][i][0]), hex(table[0][i][1]), hex(table[0][i][2]), hex(table[0][i][3]), table[1][i])
+                logging.debug("Card #%d modified (%s%s%s%s%s%s%s%s), now auth = %d.", i, table[0][i][0], table[0][i][1], table[0][i][2], table[0][i][3], table[0][i][4], table[0][i][5], table[0][i][6], table[0][i][7], table[1][i])
                 outarg["num_authmod"] += 1
             elif read_buf[2] == 0xD3:
                 # New card added
