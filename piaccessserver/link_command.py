@@ -223,7 +223,7 @@ class LinkCommand():
                     logging.warning("Unable to write %s command to %s. Radio link is down.",
                                      hex(command[0]), self.commutator_name)
                     return outarg
-            logging.debug("Command #%d sent.", i)
+            # logging.debug("Command #%d sent.", i)
             # Wait for answer
             read_buf = []
             self.radio.startListening()
@@ -266,9 +266,11 @@ class LinkCommand():
                 pass
             elif read_buf[2] == 0xD2:
                 # Authorisation was modified for this card
+                logging.debug("Card #%d modified (%s%s%s%s), now auth = %d.", i, hex(table[0][i][0]), hex(table[0][i][1]), hex(table[0][i][2]), hex(table[0][i][3]), table[1][i])
                 outarg["num_authmod"] += 1
             elif read_buf[2] == 0xD3:
                 # New card added
+                logging.debug("Card #%d added.", i)
                 outarg["num_newcard"] += 1
             elif read_buf[2] == 0xDF:
                 # Memory full, exit
