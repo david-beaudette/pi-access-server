@@ -9,6 +9,7 @@ import logging
 import csv
 import string
 import MySQLdb
+import kitchen
     
 def read_db(events, config_filename):
     # Read parameter file
@@ -105,7 +106,7 @@ def write_report(filename, events):
     # Write CSV file with returned results
     with open(filename, 'wb') as csvfile:
         infowriter = csv.writer(csvfile, delimiter=';')
-        csv_header = [s.encode('utf-8') for s in csv_header]
+        csv_header = [kitchen.text.converters.to_utf8(s) for s in csv_header]
         infowriter.writerow(csv_header)
         for event in events: 
             event = [s.encode('utf-8') for s in event]
@@ -122,11 +123,9 @@ def write_excel(filename, events):
                   u"Date d''enregistrement",
                   u"Date de début de l''évènement",
                   u"Statut de la contribution")
-
-    header = [s.encode('utf-8') for s in header]
+    
     workbook = xlsxwriter.Workbook(filename)
     worksheet = workbook.add_worksheet('Formations')
-
     worksheet.write_row(0, 0, header)
     
     # Start from the second row. Rows and columns are zero indexed.
@@ -134,8 +133,11 @@ def write_excel(filename, events):
 
     # Iterate over the data and write it out row by row.
     for event in events:
-        #event = [s.encode('utf-8') for s in event]
-        print(event)
+        for event_str in event:
+            if isinstance(event_str, str):
+                # Convert to unicode
+                event_str = kitchen.text.converters.to_utf8(event_str)
+
         worksheet.write_row(row, 0, event)
         row += 1
 
@@ -157,6 +159,8 @@ if __name__ == '__main__':
     else:
         # Provide dummy data to function
         events = ((u'Chamberland1, Lysane', u'lysane.chamberland@icloud.com', u'La planche à découper de vos rêves!', u'Enregistré', u'Participant formation', u'31 octobre 2017 2:08 PM', u'1 novembre 2017 5:30 PM', u'Completed'),
+                  ('Chamberland2, Lysane', 'chamberland@icloud.com', 'La planche', u'Enregistré', 'Participant formation', '31 octobre 2018 2:08 AM', '34 novembre 2017 5:30 PM', 'Completed'),
+                  ('Chamberland3, Lysane', 'lysane@icloud.com', u'vos rêves!', u'Enregistré', u'Bénévole', '31 octobre 2017 2:08 PM', '1 novembre 2017 5:30 PM', 'Pending'),
                   )
   
     from os import remove
@@ -184,7 +188,5 @@ if __name__ == '__main__':
     write_excel(xlsx_filename,
                 events)
     
- #                 ('Chamberland2, Lysane', 'chamberland@icloud.com', 'La planche', u'Enregistré', 'Participant formation', '31 octobre 2018 2:08 AM', '34 novembre 2017 5:30 PM', 'Completed'),
- #                 ('Chamberland3, Lysane', 'lysane@icloud.com', u'vos rêves!', u'Enregistré', u'Bénévole', '31 octobre 2017 2:08 PM', '1 novembre 2017 5:30 PM', 'Pending'),
 
 
