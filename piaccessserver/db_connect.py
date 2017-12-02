@@ -20,7 +20,7 @@ def read_db(commutators, members, memberships, cards, tags, config_filename):
                          passwd=civi_pw, # your password
                          db=civi_db,     # name of the data base
                          charset='utf8',
-                         use_unicode=False) 
+                         use_unicode=True) 
 
     cur = db.cursor()
 

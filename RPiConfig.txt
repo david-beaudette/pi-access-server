@@ -8,6 +8,8 @@ Raspberry Pi configuration to build an access server
   sudo apt-get install python-dev
   sudo apt-get install python-pip
   sudo pip install --upgrade google-api-python-client
+  sudo pip install peewee
+  sudo pip install xlsxwriter
   
 3. Enable SPI on the system
   sudo nano /etc/modprobe.d/raspi-blacklist.conf

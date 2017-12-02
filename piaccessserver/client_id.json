@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "suivi-des-cartes-magnetiques",
+  "private_key_id": "a9e8a6acc53b5922ded2cc82b1eec32cea6486ce",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDNI+urkM0Ou5DX\nPEowAegIMfcMV2tbuMUVlVecTN7iqmjb9foAabCbKfDjk12rsHBbKj9txvDVBw1S\nJ5PleA1d6UunDEQomUlwhz1tv6Vbn4JHLSr620iIw+1EVyyeWZa9lANPDLIzIp1N\ndHrJo7J/gvVW0Cxdu3IBEebPW0e5ElgXy8hOn9wPpnxUcVm451Wh0jq18wZUsPX0\ny0+BnyXAJhwMAB4L5t+qFYPnXtyShkZ9TFc1zTUHc7w89E2ABTaC8PGwCsGNaoKT\ngILcjB/V+vjH+RhBhsM0M+M/VixO2bydJ6yupooSaZ7dIegSJmpqsM1jCPBn928o\nxNzCE6N1AgMBAAECggEAWU2T4MJOomVA7pIOccvCqR6nP7YmxG0xTu4Oj7pfJSmu\nMGNqjBd2jHW7qjaTBpTutKE1r6J1YSeKwwL7vV9/4iwXhQcv/MSOVfBp64cMg1Bz\nNG0TUtV3RCKW/bM9d0nk926h6h3Kzbv54qgcc/9RS3VFPJ+vULazMIgMhKRmGsh7\n+O5ewKtCJKPfI2NhEtv5Xri1/JBtdoxHhPLhhvpxBgECvKQPsI2ufn/SJpPk5ZGA\nAGQwqBhLtsbl71+XvgJBoYGWVIjyBkSLxqyrL+ovgZl09RffrEMRPzP8ZkTaHkka\nJmkO0gECPnxtsppNJ617lBbYMiyXBBFk2nTm1P99wQKBgQDr8kGYc7mHAPaGTTW4\n2Dggj57bbPaqInJ29cEjg5geOditaeN7oZpP4I6nFk7fDJe1mAPFj/xW9/Mvr9CK\nDeNBrZ3hoZFc2hFxXeVUxc68yu4CnYJr9C19AWSXAYj+0MJoGyeu4ufAIccO6nPD\nNCW15EzzQFj254TyauLjMBpzaQKBgQDek2Jir9RFcfuIos1mWoKy+WFu7C7lWVU3\nE1VFjHcex1aq71zAqq1VzU+C3hvbfAESfB45kOsNaRVMFjc0+dcpHLiDVzdGc11/\n3x7MIltDY2h/zpKN5n5Rt6cxKJiTDouwLjL7ogEddx3QXWxWj1bxRq2JMJao+Nfo\n8IvpgmlKLQKBgH6l2MPmSk3HHIzWYOHJXcdMkC6j/HsyZlKoc3WGq15+GmprDipM\ngjIiDTBu7wMXFU/qOwwOz5o3GZgdPUj9T2DvunFkckxu2TIK/pBUZTY9jyhkN5+O\nv+P7nWzY7BorIE8VVGWxckhVWS4OdvjuwtcxpoRjo91URK6C5SqhpXERAoGAORff\nVec6cTHiztLME2RGQHid2KE3ClfW9xC7f+KfL8L8ZU6PIVDms6q9qZkl1jBB6iby\nbdvRn5gEAYd1U95+paobXn2BzU2Mf1+Re9WYSXn3dUlc6I9mebm9Zmu+b4J8rI29\nQDT3SkKi4C8GulF8gNmbbCSNkPx8DeGeUiDEt2UCgYAmxV0kc+pQ35cbGQsPZF5n\nmSJfIv39BVQRML5pfrUfDaexZJ9COWwbAyEtCsBqk8uyeDVIFcrwO50033JFtOGb\nVjbkI5Fslh+Ewen0PKOPczKcQfs9W5qO4K6mLCvtlb55jzd69tk9bQUDBP+zpwB9\nb4Lsh04hGQ2sfE4dK2UM6Q==\n-----END PRIVATE KEY-----\n",
+  "client_email": "compte-de-service@suivi-des-cartes-magnetiques.iam.gserviceaccount.com",
+  "client_id": "106321994795379983722",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://accounts.google.com/o/oauth2/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/compte-de-service%40suivi-des-cartes-magnetiques.iam.gserviceaccount.com"
+}
