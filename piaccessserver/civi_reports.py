@@ -99,8 +99,8 @@ def write_report(filename, events):
                   u"Évènement",
                   u"Statut",
                   u"Rôle",
-                  u"Date d''enregistrement",
-                  u"Date de début de l''évènement",
+                  u"Date d'enregistrement",
+                  u"Date de début de l'évènement",
                   u"Statut de la contribution")
 
     # Write CSV file with returned results
@@ -115,19 +115,31 @@ def write_report(filename, events):
 def write_excel(filename, events):
 
     # Build csv file header with column names
-    header = (u"Nom du participant",
-                  u"Courriel",
-                  u"Évènement",
-                  u"Statut",
-                  u"Rôle",
-                  u"Date d''enregistrement",
-                  u"Date de début de l''évènement",
-                  u"Statut de la contribution")
+    table_header = (u"Nom du participant",
+                    u"Courriel",
+                    u"Évènement",
+                    u"Statut",
+                    u"Rôle",
+                    u"Date d'enregistrement",
+                    u"Date de début de l'évènement",
+                    u"Statut de la contribution")
     
     workbook = xlsxwriter.Workbook(filename)
     worksheet = workbook.add_worksheet('Formations')
-    worksheet.write_row(0, 0, header)
+    worksheet.set_column(0, 8, 35.0)
+    worksheet.set_column(3, 3, 20.0)
     
+    # Add a table to the worksheet.
+    worksheet.add_table('A1:H100', {'columns': [{'header': table_header[0]},
+                                                 {'header': table_header[1]},
+                                                 {'header': table_header[2]},
+                                                 {'header': table_header[3]},
+                                                 {'header': table_header[4]},
+                                                 {'header': table_header[5]},
+                                                 {'header': table_header[6]},
+                                                 {'header': table_header[7]},
+                                                 ]})
+                                               
     # Start from the second row. Rows and columns are zero indexed.
     row = 1
 
@@ -158,11 +170,27 @@ if __name__ == '__main__':
         print(events) 
     else:
         # Provide dummy data to function
-        events = ((u'Chamberland1, Lysane', u'lysane.chamberland@icloud.com', u'La planche à découper de vos rêves!', u'Enregistré', u'Participant formation', u'31 octobre 2017 2:08 PM', u'1 novembre 2017 5:30 PM', u'Completed'),
-                  ('Chamberland2, Lysane', 'chamberland@icloud.com', 'La planche', u'Enregistré', 'Participant formation', '31 octobre 2018 2:08 AM', '34 novembre 2017 5:30 PM', 'Completed'),
-                  ('Chamberland3, Lysane', 'lysane@icloud.com', u'vos rêves!', u'Enregistré', u'Bénévole', '31 octobre 2017 2:08 PM', '1 novembre 2017 5:30 PM', 'Pending'),
+        events = ((u'Barbosu, Ioana', u'iirimiesioana@gmail.com', u'Atelier de Noël: Décorations en argile', u'Participant formation', u'2017-11-30 09:55', u'2017-12-02 09:30'),
+                  (u'Bergeron-Benoit, Léandre', u'stephanie.benoit1@hotmail.com', u'Atelier de Noël: Décorations en argile', u'Participant formation', u'2017-12-01 15:27', u'2017-12-02 09:30'),
+                  (u'Langlois, Alice', u'melanie.drouin@usherbrooke.ca', u'Atelier de Noël: Décorations en argile', u'Participant formation', u'2017-11-22 08:56', u'2017-12-02 09:30'),
+                  (u'Langlois, Rosemarie', u'sebastien.langlois@usherbrooke.ca', u'Atelier de Noël: Décorations en argile', u'Participant formation', u'2017-11-22 08:56', u'2017-12-02 09:30'),
+                  (u'Laverdière, Ève', u'annie.dionne@usherbrooke.ca', u'Atelier de Noël: Décorations en argile', u'Participant formation', u'2017-11-17 10:13', u'2017-12-02 09:30'),
+                  (u'Renaud, Charlotte', u'valchampagne@hotmail.com', u'Atelier de Noël: Décorations en argile', u'Participant formation', u'2017-12-01 18:10', u'2017-12-02 09:30'),
+                  (u'Renaud, Émile', u'valchampagne@hotmail.com', u'Atelier de Noël: Décorations en argile', u'Participant formation', u'2017-11-26 15:02', u'2017-12-02 09:30'),
+                  (u'Renaud, Jules', u'champagnev@csrs.qc.ca', u'Atelier de Noël: Décorations en argile', u'Participant formation', u'2017-11-26 15:02', u'2017-12-02 09:30'),
+                  (u'Richard, mikael', u'marysamma@gmail.com', u'Atelier de Noël: Décorations en argile', u'Participant formation', u'2017-11-19 14:56', u'2017-12-02 09:30'),
+                  (u'Ruel, Zacharie', u'annie.belanger@usherbrooke.ca', u'Atelier de Noël: Décorations en argile', u'Participant formation', u'2017-11-21 16:50', u'2017-12-02 09:30'),
+                  (u'Béland, Camille', u'laugams2@hotmail.com', u'Atelier de Noël: Hélicoptères (modèle réduit)', u'Participant formation', u'2017-11-19 16:09', u'2017-12-02 09:30'),
+                  (u'Béland, Félix', u'laugams@hotmail.com', u'Atelier de Noël: Hélicoptères (modèle réduit)', u'Participant formation', u'2017-11-19 16:09', u'2017-12-02 09:30'),
+                  (u'Chiasson , Tom', u'marieamekie@yahoo.fr', u'Atelier de Noël: Hélicoptères (modèle réduit)', u'Participant formation', u'2017-11-24 15:52', u'2017-12-02 09:30'),
+                  (u'Couture, Félix', u'carolinedumeste@hotmail.com', u'Atelier de Noël: Hélicoptères (modèle réduit)', u'Participant formation', u'2017-11-24 11:01', u'2017-12-02 09:30'),
+                  (u'Mlot, Léonard', u'emilie.dugre@usherbrooke.ca', u'Atelier de Noël: Hélicoptères (modèle réduit)', u'Participant formation', u'2017-11-20 08:19', u'2017-12-02 09:30'),
+                  (u'Santerre, Élliott', u'marieamekie@yahoo.fr', u'Atelier de Noël: Hélicoptères (modèle réduit)', u'Participant formation', u'2017-11-24 15:55', u'2017-12-02 09:30'),
+                  (u'Boudreau, Louis', u'pascale.rousseau@usherbrooke.ca', u'Atelier de Noël: Cartes de souhaits électroniques', u'Participant formation', u'2017-12-01 15:42', u'2017-12-02 09:30'),
+                  (u'Santerre, Julien', u'marieamekie@yahoo.fr', u'Atelier de Noël: Cartes de souhaits électroniques', u'Participant formation', u'2017-11-19 09:41', u'2017-12-02 09:30'),
+                  (u'Bélanger, Mélanie', u'belanger.mela@gmail.com', u'Bague en bois sur mesure!', u'Participant formation', u'2017-11-22 09:48', u'2017-12-20 17:30'),
                   )
-  
+
     from os import remove
     csv_filename = 'test_civi_reports.csv'
 
