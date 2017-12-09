@@ -11,7 +11,7 @@ import string
 import MySQLdb
 import kitchen
     
-def read_db(events, config_filename):
+def read_db(events, access, config_filename):
     # Read parameter file
     config = ConfigParser.RawConfigParser()
     config.read(config_filename)
@@ -73,13 +73,54 @@ def read_db(events, config_filename):
                         ORDER BY `civicrm_event`.`title` ASC
                         ;"""
 
+    get_access_req = """SELECT SQL_CALC_FOUND_ROWS 
+                          contact_civireport.sort_name as civicrm_contact_sort_name,
+                          contact_civireport.id as civicrm_contact_id, 
+                          membership_civireport.membership_type_id as civicrm_membership_membership_type_id, 
+                          membership_civireport.start_date as civicrm_membership_membership_start_date, 
+                          membership_civireport.end_date as civicrm_membership_membership_end_date, 
+                          membership_civireport.source as civicrm_membership_source, 
+                          mem_status_civireport.name as civicrm_membership_status_name, 
+                          contribution_civireport.id as civicrm_contribution_contribution_id, 
+                          contribution_civireport.currency as civicrm_contribution_currency  
+
+                        FROM  civicrm_contact contact_civireport 
+                                       INNER JOIN civicrm_membership membership_civireport
+                                                  ON contact_civireport.id =
+                                                     membership_civireport.contact_id AND membership_civireport.is_test = 0
+                                       LEFT  JOIN civicrm_membership_status mem_status_civireport
+                                                  ON mem_status_civireport.id =
+                                                     membership_civireport.status_id 
+                                     
+                          LEFT JOIN civicrm_membership_payment cmp
+                                         ON membership_civireport.id = cmp.membership_id
+                                     
+                          LEFT JOIN civicrm_contribution contribution_civireport
+                                         ON cmp.contribution_id=contribution_civireport.id
+                         
+
+                        WHERE ( membership_civireport.membership_type_id IN (11, 12, 13) ) 
+                          AND ( contribution_civireport.contribution_status_id IN (1) ) 
+                          AND contact_civireport.is_deleted = 0   
+
+                        GROUP BY membership_civireport.id  
+
+                        ORDER BY 
+                          contribution_civireport.receive_date DESC, 
+                          contribution_civireport.receive_date DESC  
+
+                        LIMIT 0, 50"""
     try:
         cur.execute(get_event_req)
         event_req = cur.fetchall()
 
+        cur.execute(get_access_req)
+        access_req = cur.fetchall()
+
         logging.info("All data retrieved from database.")
 
         events.extend(event_req)
+        access.extend(access_req)
         return True
         
     except MySQLdb.Error as e:
@@ -112,7 +153,7 @@ def write_report(filename, events):
             event = [s.encode('utf-8') for s in event]
             infowriter.writerow(event)
 
-def write_excel(filename, events):
+def write_excel(filename, events, access):
 
     # Build csv file header with column names
     table_header = (u"Nom du participant",
@@ -153,6 +194,56 @@ def write_excel(filename, events):
         worksheet.write_row(row, 0, event)
         row += 1
 
+    # Access worksheet
+    table_header = (u"Nom du participant",
+                    u"Type d'adhésion",
+                    u"Date de début",
+                    u"Date de fin",
+                    u"Source",
+                    u"Statut")
+    
+    worksheet = workbook.add_worksheet(u'Accès illimités')
+    worksheet.set_column(0, 6, 35.0)
+    
+    # Add a table to the worksheet.
+    worksheet.add_table('A1:F100', {'columns': [ {'header': table_header[0]},
+                                                 {'header': table_header[1]},
+                                                 {'header': table_header[2]},
+                                                 {'header': table_header[3]},
+                                                 {'header': table_header[4]},
+                                                 {'header': table_header[5]},
+                                                 ]})
+                                               
+    # Start from the second row. Rows and columns are zero indexed.
+    row = 1
+
+    # Iterate over the data and write it out row by row.
+    for member_access in access:
+        # First convert all strings to utf-8
+        for member_field in member_access:
+            if isinstance(member_field, str):
+                # Convert to unicode
+                member_field = kitchen.text.converters.to_utf8(member_field)
+        # Then associate the row fields with the right request element
+        member_row = []
+        member_row.append(member_access[0])
+        if member_access[2] == 11:
+            member_row.append(u"Accès 1 mois")
+        elif member_access[2] == 12:
+            member_row.append(u"Accès 4 mois")
+        elif member_access[2] == 13:
+            member_row.append(u"Accès 1 an")
+        else:
+            member_row.append(u"?????")
+            
+        member_row.append(member_access[3])
+        member_row.append(member_access[4])
+        member_row.append(member_access[5])
+        member_row.append(member_access[6])
+
+        worksheet.write_row(row, 0, member_row)
+        row += 1
+
     workbook.close()    
     
 
@@ -164,7 +255,7 @@ if __name__ == '__main__':
         
         # Test db data retrieval
         config_filename = 'db_connect_fields.ignored'
-        read_db(events, config_filename)
+        read_db(events, access, config_filename)
 
         # Inspect outputs
         print(events) 
@@ -190,6 +281,15 @@ if __name__ == '__main__':
                   (u'Santerre, Julien', u'marieamekie@yahoo.fr', u'Atelier de Noël: Cartes de souhaits électroniques', u'Participant formation', u'2017-11-19 09:41', u'2017-12-02 09:30'),
                   (u'Bélanger, Mélanie', u'belanger.mela@gmail.com', u'Bague en bois sur mesure!', u'Participant formation', u'2017-11-22 09:48', u'2017-12-20 17:30'),
                   )
+                  
+        access = ((u'Tremblay, Guillaume', 1689, 11, u'30/11/2017', u'31/12/2017', u'NULL', u'Current', u'3618', u'CAD'),
+                  (u'Nadeau, Julien', u'1128', 13, u'16/11/2017', u'16/11/2018', u'NULL', u'Current', u'3538', u'CAD'),
+                  (u'Laplante, Martin', u'1627', 11, u'09/11/2017', u'09/12/2017', u'NULL', u'Current', u'3497', u'CAD'),
+                  (u'Blache, Valérie', u'1474', 11, u'12/09/2017', u'12/12/2017', u'NULL', u'Current', u'3297', u'CAD'),
+                  (u'Singh, Sita', u'1093', 13, u'24/08/2017', u'24/08/2018', u'NULL', u'Current', u'3231', u'CAD'),
+                  (u'Bourgouin, Jean-Francois', u'1553', 11, u'27/07/2017', u'26/08/2017', u'NULL', u'Expired', u'3140', u'CAD'),
+                  (u'Petitclair, Jonathan', u'1513', 11, u'20/06/2017', u'20/07/2017', u'Accès 1 mois illimité', u'Expired', u'3024', u'CAD')
+                  )
 
     from os import remove
     csv_filename = 'test_civi_reports.csv'
@@ -213,8 +313,7 @@ if __name__ == '__main__':
         pass
 
     # Write data to file
-    write_excel(xlsx_filename,
-                events)
+    write_excel(xlsx_filename, events, access)
     
 
 
